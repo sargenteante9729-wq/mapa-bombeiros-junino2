@@ -2,73 +2,26 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mapa de Festejos Juninos</title>
-    
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
-
+    <title>Mapa de Teste</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
     <style>
-        body { margin: 0; display: flex; height: 100vh; font-family: sans-serif; }
-        #menu-lateral { width: 300px; background: #fff; overflow-y: auto; border-right: 2px solid #d32f2f; }
-        #menu-lateral h2 { background: #d32f2f; color: white; padding: 15px; margin: 0; text-align: center; }
-        ul#lista-cidades { list-style: none; padding: 0; margin: 0; }
-        ul#lista-cidades li { padding: 15px; border-bottom: 1px solid #ddd; cursor: pointer; font-weight: bold; }
-        ul#lista-cidades li:hover { background: #ffebee; }
-        #mapa { flex-grow: 1; background-color: #aad3df; } /* Cor de fundo caso o mapa falhe */
-        .leaflet-routing-container { display: none; }
+        body { margin: 0; padding: 0; }
+        #mapa { height: 100vh; width: 100vw; background: #ddd; }
     </style>
 </head>
 <body>
-
-    <div id="menu-lateral">
-        <h2>Municípios</h2>
-        <ul id="lista-cidades"></ul>
-    </div>
     <div id="mapa"></div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    
     <script>
-        const URL_PLANILHA = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRRv-CBDj8UMUo32h5_wkViXlTX72qRCoKOOM3gKxvpT3XAcYwd_ZemvShx87VPRUNU1B4PTZZkVn0P/pub?output=csv';
-        
-        // Inicializa o mapa
-        const mapa = L.map('mapa').setView([-10.7, -37.4], 9);
-        
-        // Troca para o servidor de mapas do CartoDB (muito estável)
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap, © CartoDB'
-        }).addTo(mapa);
-
-        let controleRota;
-        const ARACAJU = L.latLng(-10.9472, -37.0731);
-
-        function desenharRota(lat, lon) {
-            if (controleRota) mapa.removeControl(controleRota);
-            controleRota = L.Routing.control({
-                waypoints: [ARACAJU, L.latLng(lat, lon)],
-                lineOptions: { styles: [{ color: '#d32f2f', weight: 6 }] },
-                createMarker: function() { return null; },
-                addWaypoints: false,
-                fitSelectedRoutes: true
-            }).addTo(mapa);
+        try {
+            const mapa = L.map('mapa').setView([-10.9472, -37.0731], 12);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapa);
+            L.marker([-10.9472, -37.0731]).addTo(mapa).bindPopup("Aracaju").openPopup();
+        } catch (e) {
+            document.getElementById('mapa').innerHTML = "<h1>Erro ao carregar o mapa: " + e.message + "</h1>";
         }
-
-        Papa.parse(URL_PLANILHA, {
-            download: true, header: true,
-            complete: function(res) {
-                res.data.forEach(cidade => {
-                    if (!cidade.lat || !cidade.lon) return;
-                    L.marker([cidade.lat, cidade.lon]).addTo(mapa).bindPopup(cidade.nome);
-                    const item = document.createElement('li');
-                    item.textContent = cidade.nome;
-                    item.onclick = () => { desenharRota(cidade.lat, cidade.lon); };
-                    document.getElementById('lista-cidades').appendChild(item);
-                });
-            }
-        });
     </script>
 </body>
 </html>
