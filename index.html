@@ -10,19 +10,37 @@
     <style>
         /* ESTILOS E RESPONSIVIDADE */
         body { margin: 0; padding: 0; display: flex; height: 100vh; font-family: Arial, sans-serif; background-color: #f4f4f9; overflow: hidden; }
-        #menu-lateral { width: 320px; background-color: #ffffff; box-shadow: 2px 0 5px rgba(0,0,0,0.1); z-index: 1000; display: flex; flex-direction: column; }
-        #menu-lateral h2 { background-color: #d32f2f; color: white; margin: 0; padding: 15px 20px; font-size: 1.1rem; text-align: center; }
+        
+        #menu-lateral { 
+            width: 320px; 
+            background-color: #ffffff; 
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1); 
+            z-index: 1000; 
+            display: flex; 
+            flex-direction: column;
+            transition: height 0.3s ease; /* Animação suave ao abrir/fechar no mobile */
+        }
+        
+        #menu-lateral h2 { 
+            background-color: #d32f2f; 
+            color: white; 
+            margin: 0; 
+            padding: 15px 20px; 
+            font-size: 1.1rem; 
+            text-align: center; 
+            cursor: pointer; /* Mostra a mãozinha indicando que a barra é clicável */
+            user-select: none;
+        }
         
         ul#lista-cidades { list-style-type: none; padding: 0; margin: 0; overflow-y: auto; flex-grow: 1; -webkit-overflow-scrolling: touch; }
         ul#lista-cidades li { padding: 15px 20px; border-bottom: 1px solid #eeeeee; cursor: pointer; transition: background-color 0.2s; display: flex; align-items: center; font-weight: bold; color: #333; }
         ul#lista-cidades li:hover { background-color: #ffebee; color: #d32f2f; }
         
-        /* Espaçamento para o indicador de risco na lista */
         .status-risco-lista { margin-right: 12px; font-size: 1.1rem; display: inline-block; }
         
         #mapa { flex-grow: 1; height: 100%; width: 100%; }
         
-        /* ESTILIZAÇÃO DOS NOVOS MARCADORES TÁTICOS */
+        /* ESTILIZAÇÃO DOS MARCADORES TÁTICOS */
         .marcador-bombeiro {
             font-size: 18px;
             text-align: center;
@@ -37,7 +55,6 @@
             transition: all 0.2s ease;
         }
         
-        /* Cores das bordas e fundos baseadas no nível de risco */
         .risco-alto { border: 3px solid #d32f2f; background-color: #ffebee; }
         .risco-medio { border: 3px solid #fbc02d; background-color: #fffde7; }
         .risco-baixo { border: 3px solid #388e3c; background-color: #e8f5e9; }
@@ -49,11 +66,40 @@
         .info-popup h4 { margin: 12px 0 5px 0; color: #444; background-color: #f5f5f5; padding: 3px; border-radius: 3px; }
         .info-popup p { margin: 3px 0; line-height: 1.4; }
         
+        /* COMPORTAMENTO EXCLUSIVO PARA TELAS MENORES (MOBILE) */
         @media (max-width: 768px) {
             body { flex-direction: column-reverse; }
-            #menu-lateral { width: 100%; height: 40vh; box-shadow: 0 -2px 5px rgba(0,0,0,0.1); }
-            #mapa { height: 60vh; }
-            #menu-lateral h2 { font-size: 1rem; padding: 12px 15px; }
+            
+            #menu-lateral { 
+                width: 100%; 
+                height: 40vh; 
+                flex-shrink: 0;
+                box-shadow: 0 -2px 5px rgba(0,0,0,0.1); 
+            }
+            
+            /* Classe ativada via JavaScript para colapsar o menu */
+            #menu-lateral.recolhido { 
+                height: 45px; /* Deixa apenas a barra do título visível */
+            }
+            
+            #menu-lateral h2 { 
+                font-size: 1rem; 
+                padding: 12px 15px; 
+            }
+            
+            /* Adiciona uma sutil indicação visual de expansão no título apenas no mobile */
+            #menu-lateral h2::after {
+                content: ' ↕';
+                font-size: 0.8rem;
+                opacity: 0.7;
+            }
+            
+            #mapa { 
+                flex-grow: 1; 
+                height: auto; 
+                width: 100%; 
+            }
+            
             ul#lista-cidades li { padding: 12px 15px; }
             .info-popup { min-width: 200px; max-width: 240px; }
         }
@@ -89,20 +135,27 @@
         let timerAnimacao;
 
         const listaCidadesElemento = document.getElementById('lista-cidades');
+        const menuLateral = document.getElementById('menu-lateral');
+
+        // Permite abrir e fechar o menu clicando diretamente na barra de título
+        document.querySelector('#menu-lateral h2').onclick = () => {
+            menuLateral.classList.toggle('recolhido');
+            // Dá um leve delay e força o mapa a recalcular seu tamanho para evitar áreas cinzas
+            setTimeout(() => { mapa.invalidateSize(); }, 320);
+        };
 
         function gerarVetorOperacional(latDestino, lonDestino, marcadorDestino, classeRisco) {
             if (linhaVetor) mapa.removeLayer(linhaVetor);
             if (timerAnimacao) clearInterval(timerAnimacao);
             if (carrinhoAnimado) mapa.removeLayer(carrinhoAnimado);
 
-            // A linha do trajeto tático agora herda a cor do risco do destino para ficar padronizado
             let corLinha = '#9e9e9e';
             if (classeRisco === 'risco-alto') corLinha = '#d32f2f';
             if (classeRisco === 'risco-medio') corLinha = '#fbc02d';
             if (classeRisco === 'risco-baixo') corLinha = '#388e3c';
 
             linhaVetor = L.polyline([[LAT_ARACAJU, LON_ARACAJU], [latDestino, lonDestino]], {
-                color: corLinha, weight: 4, opacity: 0.8, dashArray: '8, 8'
+                color: '#d32f2f', weight: 4, opacity: 0.8, dashArray: '8, 8'
             }).addTo(mapa);
 
             mapa.fitBounds(linhaVetor.getBounds(), { padding: [50, 50] });
@@ -121,7 +174,6 @@
         }
 
         function iniciarDeslocamento(pontos, marcadorDestino, classeRisco) {
-            // O carrinho da animação também assume o estilo visual da missão
             const iconeAnimado = L.divIcon({
                 html: '🚒', 
                 className: `marcador-bombeiro ${classeRisco}`, 
@@ -189,9 +241,8 @@
                 const lonCidade = parseFloat(cidade.lon);
                 const htmlDoBalao = gerarHTMLPopup(cidade);
 
-                // Lógica de definição de classes de risco e emojis indicadores
                 let classeRisco = 'risco-padrao';
-                let indicadorLista = '🚒'; // Padrão caso não tenha dados preenchidos ainda
+                let indicadorLista = '🚒'; 
 
                 if (cidade.risco === 'Alto') {
                     classeRisco = 'risco-alto';
@@ -204,7 +255,6 @@
                     indicadorLista = '🟢';
                 }
 
-                // Cria o ícone customizado com uma borda circular colorida tática
                 const iconeCustomizado = L.divIcon({
                     html: '🚒',
                     className: `marcador-bombeiro ${classeRisco}`,
@@ -217,12 +267,16 @@
                     .addTo(mapa)
                     .bindPopup(htmlDoBalao);
 
-                // Monta o item da lista lateral com a bola colorida correspondente
                 const itemLista = document.createElement('li');
                 itemLista.innerHTML = `<span class="status-risco-lista">${indicadorLista}</span> <span>${cidade.nome}</span>`;
                 
                 itemLista.onclick = () => {
                     gerarVetorOperacional(latCidade, lonCidade, marcador, classeRisco);
+                    
+                    // ATIVAÇÃO DO RECOLHIMENTO AUTOMÁTICO (Apenas afeta telas mobile)
+                    menuLateral.classList.add('recolhido');
+                    // Força o mapa a se reajustar ao novo tamanho de tela livre instantaneamente
+                    setTimeout(() => { mapa.invalidateSize(); }, 320);
                 };
 
                 listaCidadesElemento.appendChild(itemLista);
