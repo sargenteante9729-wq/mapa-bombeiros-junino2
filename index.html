@@ -28,7 +28,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
     <script>
-        // Configuração Inicial
         const mapa = L.map('mapa').setView([-10.9472, -37.0731], 9);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}.png').addTo(mapa);
         
@@ -48,15 +47,12 @@
 
         const URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRRv-CBDj8UMUo32h5_wkViXlTX72qRCoKOOM3gKxvpT3XAcYwd_ZemvShx87VPRUNU1B4PTZZkVn0P/pub?output=csv';
         
-        // Leitura da Planilha
         Papa.parse(URL, {
             download: true, 
             header: true,
             skipEmptyLines: true,
             complete: function(res) {
-                console.log("Dados da planilha:", res.data); // Verifique o console do F12
                 res.data.forEach(c => {
-                    // Tenta ler colunas, aceitando variações de nome
                     const nome = c.nome || c.Nome || "Local";
                     const lat = parseFloat(c.lat || c.Latitude);
                     const lon = parseFloat(c.lon || c.Longitude);
