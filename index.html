@@ -54,7 +54,6 @@
     <script>
         // =========================================================================
         // SUA PLANILHA MANUAL DE DADOS OPERACIONAIS
-        // Alterou aqui, muda no mapa automaticamente. Use \n para quebras de linha.
         // =========================================================================
         const PLANILHA_MANUAL = [
             {
@@ -87,13 +86,15 @@
         const mapa = L.map('mapa', { zoomControl: false }).setView([-10.7, -37.4], 8);
         L.control.zoom({ position: 'topright' }).addTo(mapa);
         
-        // Servidor CartoDB Voyager: Extremamente estável e limpo visualmente
+        // Servidor CartoDB Voyager: Extremamente estável
         L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { 
             attribution: '© OpenStreetMap contributors © CartoDB' 
         }).addTo(mapa);
         
         const ARACAJU = L.latLng(-10.9472, -37.0731);
         let controleRota;
+        let carrinhoAnimado;
+        let timerAnimacao;
 
         const iconeBombeiro = L.divIcon({
             html: '🚒', className: 'marcador-bombeiro', iconSize: [30, 30], iconAnchor: [15, 15], popupAnchor: [0, -15]
@@ -101,7 +102,8 @@
 
         const listaCidadesElemento = document.getElementById('lista-cidades');
 
-        function tracarRotaOperacional(latDestino, lonDestino) {
+        // Configura e gera o traçado na tela
+        function tracarRotaOperacional(latDestino, lonDestino, marcadorDestino) {
             if (controleRota) {
                 mapa.removeControl(controleRota);
             }
@@ -116,6 +118,53 @@
                 draggableWaypoints: false,
                 fitSelectedRoutes: true 
             }).addTo(mapa);
+
+            // Assim que as estradas forem calculadas, inicia a viagem do carrinho
+            controleRota.on('routesfound', function(e) {
+                const coordenadasEstrada = e.routes[0].coordinates;
+                deslocarViatura(coordenadasEstrada, marcadorDestino);
+            });
+        }
+
+        // Função responsável pelo efeito do carrinho andando na estrada
+        function deslocarViatura(coordenadas, marcadorDestino) {
+            // Limpa qualquer animação rodando antes para evitar bugs caso clique rápido
+            if (timerAnimacao) clearInterval(timerAnimacao);
+            if (carrinhoAnimado) mapa.removeLayer(carrinhoAnimado);
+
+            if (!coordenadas || coordenadas.length === 0) return;
+
+            // Cria a viatura na posição inicial (Aracaju)
+            carrinhoAnimado = L.marker(coordenadas[0], { icon: iconeBombeiro }).addTo(mapa);
+
+            let index = 0;
+            const totalPontos = coordenadas.length;
+            
+            // Ritmo do motor: ajusta dinamicamente a velocidade para durar ~1.8 segundos a viagem
+            const totalPassosFrames = 90; 
+            const incremento = Math.max(1, Math.round(totalPontos / totalPassosFrames));
+
+            timerAnimacao = setInterval(() => {
+                index += incremento;
+                
+                // Chegou ao destino final
+                if (index >= totalPontos) {
+                    clearInterval(timerAnimacao);
+                    carrinhoAnimado.setLatLng(coordenadas[totalPontos - 1]);
+                    
+                    // Dispara o Balão de Informações Operacionais da Cidade
+                    if (marcadorDestino) marcadorDestino.openPopup();
+                    
+                    // Apaga o carrinho temporário de animação (já que a cidade já tem o dela fixo)
+                    setTimeout(() => {
+                        if (carrinhoAnimado) mapa.removeLayer(carrinhoAnimado);
+                    }, 800);
+                    return;
+                }
+                
+                // Move o carrinho para o próximo ponto da rodovia
+                carrinhoAnimado.setLatLng(coordenadas[index]);
+            }, 20); // Atualiza a posição a cada 20 milissegundos (Suavidade de 50 FPS)
         }
 
         function formatarTexto(texto) {
@@ -149,7 +198,7 @@
             return html;
         }
 
-        // Processa e desenha a lista e os marcadores imediatamente
+        // Renderiza as cidades no mapa e gera a lista lateral
         PLANILHA_MANUAL.forEach(cidade => {
             const latCidade = parseFloat(cidade.lat);
             const lonCidade = parseFloat(cidade.lon);
@@ -163,8 +212,7 @@
             itemLista.textContent = cidade.nome;
             
             itemLista.onclick = () => {
-                tracarRotaOperacional(latCidade, lonCidade);
-                setTimeout(() => marcador.openPopup(), 1200); 
+                tracarRotaOperacional(latCidade, lonCidade, marcador);
             };
 
             listaCidadesElemento.appendChild(itemLista);
