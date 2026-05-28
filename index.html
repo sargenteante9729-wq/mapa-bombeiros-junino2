@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Municípios atendidos nos festejos juninos</title>
     
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
 
     <style>
@@ -30,9 +30,6 @@
         .info-popup h4 { margin: 12px 0 5px 0; color: #444; background-color: #f5f5f5; padding: 3px; border-radius: 3px; }
         .info-popup p { margin: 3px 0; line-height: 1.4; }
         
-        /* Mensagem de Carregamento */
-        #loading { padding: 20px; text-align: center; color: #666; font-style: italic; }
-
         @media (max-width: 768px) {
             body { flex-direction: column-reverse; }
             #menu-lateral { width: 100%; height: 40vh; box-shadow: 0 -2px 5px rgba(0,0,0,0.1); }
@@ -47,29 +44,54 @@
 
     <div id="menu-lateral">
         <h2>Municípios atendidos nos festejos juninos</h2>
-        <div id="loading">A carregar dados operacionais... 📡</div>
         <ul id="lista-cidades"></ul>
     </div>
     <div id="mapa"></div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
     <script>
-        // NOVO LINK DA PLANILHA INTEGRADO ABAIXO
-        const URL_PLANILHA_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQubitLS63gV79H05x3Xg1AFhotBKlWJlHT8aoJhImO5F8GteULxhcW51Tx7tmCF21HwrfCPUd8HDAH/pub?output=csv';
+        // =========================================================================
+        // SUA PLANILHA MANUAL DE DADOS OPERACIONAIS
+        // Alterou aqui, muda no mapa automaticamente. Use \n para quebras de linha.
+        // =========================================================================
+        const PLANILHA_MANUAL = [
+            {
+                nome: "Aracaju", lat: -10.9472, lon: -37.0731,
+                abts: "1", ur: "2", efetivo: "30+", risco: "Alto", coordenacao: "1º GBM", publico: "30.000+",
+                eventos_programados: "🎤 Vila do Forró: 01 a 30/06\n🎤 Arraiá do Povo: 29/05 a 28/06\n🎤 Forró Caju: 29/05 a 28/07",
+                eventos_complementares: "📍 Praça Santos Dumont (12 e 13/06): 🚑 01 viatura\n📍 Conj. Augusto Franco (04, 05 e 06/06): 🚑 01 viatura"
+            },
+            {
+                nome: "Estância", lat: -11.2683, lon: -37.4386,
+                abts: "1", ur: "1", efetivo: "12", risco: "Médio", coordenacao: "2º GBM", publico: "15.000+",
+                eventos_programados: "🎤 Forró do Abandono\n🎤 Festejos Principais",
+                eventos_complementares: "📍 Centro Cultural: 🚒 Apoio preventivo"
+            },
+            { nome: "Barra dos Coqueiros", lat: -10.9089, lon: -37.0383, abts: "", ur: "", efetivo: "", risco: "", coordenacao: "", publico: "", eventos_programados: "", eventos_complementares: "" },
+            { nome: "Canindé de São Francisco", lat: -9.6617, lon: -37.7897, abts: "", ur: "", efetivo: "", risco: "", coordenacao: "", publico: "", eventos_programados: "", eventos_complementares: "" },
+            { nome: "Cristinápolis", lat: -11.4756, lon: -37.7583, abts: "", ur: "", efetivo: "", risco: "", coordenacao: "", publico: "", eventos_programados: "", eventos_complementares: "" },
+            { nome: "Itabaiana", lat: -10.6850, lon: -37.4278, abts: "", ur: "", efetivo: "", risco: "", coordenacao: "", publico: "", eventos_programados: "", eventos_complementares: "" },
+            { nome: "Nossa Senhora do Socorro", lat: -10.8550, lon: -37.1261, abts: "", ur: "", efetivo: "", risco: "", coordenacao: "", publico: "", eventos_programados: "", eventos_complementares: "" },
+            { nome: "Areia Branca", lat: -10.7589, lon: -37.3139, abts: "", ur: "", efetivo: "", risco: "", coordenacao: "", publico: "", eventos_programados: "", eventos_complementares: "" },
+            { nome: "Capela", lat: -10.5069, lon: -37.0528, abts: "", ur: "", efetivo: "", risco: "", coordenacao: "", publico: "", eventos_programados: "", eventos_complementares: "" },
+            { nome: "Itaporanga d'Ajuda", lat: -10.9981, lon: -37.3078, abts: "", ur: "", efetivo: "", risco: "", coordenacao: "", publico: "", eventos_programados: "", eventos_complementares: "" },
+            { nome: "Lagarto", lat: -10.9139, lon: -37.6681, abts: "", ur: "", efetivo: "", risco: "", coordenacao: "", publico: "", eventos_programados: "", eventos_complementares: "" },
+            { nome: "Rosário do Catete", lat: -10.6956, lon: -37.0350, abts: "", ur: "", efetivo: "", risco: "", coordenacao: "", publico: "", eventos_programados: "", eventos_complementares: "" },
+            { nome: "Tobias Barreto", lat: -11.1839, lon: -38.0000, abts: "", ur: "", efetivo: "", risco: "", coordenacao: "", publico: "", eventos_programados: "", eventos_complementares: "" }
+        ];
+        // =========================================================================
 
         // Inicializar o mapa base centrado em Sergipe
         const mapa = L.map('mapa', { zoomControl: false }).setView([-10.7, -37.4], 8);
         L.control.zoom({ position: 'topright' }).addTo(mapa);
         
-        // Servidor CartoDB Voyager: Evita telas azuis por bloqueio e melhora contraste operacional
+        // Servidor CartoDB Voyager: Extremamente estável e limpo visualmente
         L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { 
             attribution: '© OpenStreetMap contributors © CartoDB' 
         }).addTo(mapa);
         
-        // Ponto de Origem Fixo (Aracaju) e Variável de controle de Rota
         const ARACAJU = L.latLng(-10.9472, -37.0731);
         let controleRota;
 
@@ -78,9 +100,7 @@
         });
 
         const listaCidadesElemento = document.getElementById('lista-cidades');
-        const loadingElemento = document.getElementById('loading');
 
-        // Função para traçar e ajustar a rota na tela
         function tracarRotaOperacional(latDestino, lonDestino) {
             if (controleRota) {
                 mapa.removeControl(controleRota);
@@ -98,13 +118,11 @@
             }).addTo(mapa);
         }
 
-        // Função para formatar as quebras de linha da folha de cálculo para o formato HTML (<br>)
         function formatarTexto(texto) {
             if (!texto) return '';
             return texto.replace(/\n/g, '<br>');
         }
 
-        // Função Motor: Lê as colunas e monta o visual do balão (Popup)
         function gerarHTMLPopup(linha) {
             if (!linha.efetivo && !linha.abts) {
                 return `<div class="info-popup"><h3>${linha.nome}</h3><p>Informações operacionais em breve...</p></div>`;
@@ -131,68 +149,25 @@
             return html;
         }
 
-        // DADOS LOCAIS DE EMERGÊNCIA (Fallback)
-        const dadosLocaisFallback = `nome,lat,lon,abts,ur,efetivo,risco,coordenacao,publico,eventos_programados,eventos_complementares
-Aracaju,-10.9472,-37.0731,1,2,30+,Alto,1º GBM,30.000+,"🎤 Vila do Forró: 01 a 30/06
-🎤 Arraiá do Povo: 29/05 a 28/06
-🎤 Forró Caju: 29/05 a 28/07","📍 Praça Santos Dumont (12 e 13/06): 🚑 01 viatura
-📍 Conj. Augusto Franco (04, 05 e 06/06): 🚑 01 viatura"
-Estância,-11.2683,-37.4386,,,,,,,,,
-Barra dos Coqueiros,-10.9089,-37.0383,,,,,,,,,
-Canindé de São Francisco,-9.6617,-37.7897,,,,,,,,,
-Cristinápolis,-11.4756,-37.7583,,,,,,,,,
-Itabaiana,-10.6850,-37.4278,,,,,,,,,
-Nossa Senhora do Socorro,-10.8550,-37.1261,,,,,,,,,
-Areia Branca,-10.7589,-37.3139,,,,,,,,,
-Capela,-10.5069,-37.0528,,,,,,,,,
-Itaporanga d'Ajuda,-10.9981,-37.3078,,,,,,,,,
-Lagarto,-10.9139,-37.6681,,,,,,,,,
-Rosário do Catete,-10.6956,-37.0350,,,,,,,,,
-Tobias Barreto,-11.1839,-38.0000,,,,,,,,,`;
+        // Processa e desenha a lista e os marcadores imediatamente
+        PLANILHA_MANUAL.forEach(cidade => {
+            const latCidade = parseFloat(cidade.lat);
+            const lonCidade = parseFloat(cidade.lon);
+            const htmlDoBalao = gerarHTMLPopup(cidade);
 
-        // Função para processar e desenhar os marcadores no mapa
-        function processarDados(dadosPlanilha) {
-            loadingElemento.style.display = 'none'; 
-            listaCidadesElemento.innerHTML = ''; 
+            const marcador = L.marker([latCidade, lonCidade], { icon: iconeBombeiro })
+                .addTo(mapa)
+                .bindPopup(htmlDoBalao);
+
+            const itemLista = document.createElement('li');
+            itemLista.textContent = cidade.nome;
             
-            dadosPlanilha.forEach(cidade => {
-                if (!cidade.lat || !cidade.lon || !cidade.nome) return; 
+            itemLista.onclick = () => {
+                tracarRotaOperacional(latCidade, lonCidade);
+                setTimeout(() => marcador.openPopup(), 1200); 
+            };
 
-                const latCidade = parseFloat(cidade.lat);
-                const lonCidade = parseFloat(cidade.lon);
-                const htmlDoBalao = gerarHTMLPopup(cidade);
-
-                const marcador = L.marker([latCidade, lonCidade], { icon: iconeBombeiro })
-                    .addTo(mapa)
-                    .bindPopup(htmlDoBalao);
-
-                const itemLista = document.createElement('li');
-                itemLista.textContent = cidade.nome;
-                
-                itemLista.onclick = () => {
-                    tracarRotaOperacional(latCidade, lonCidade);
-                    setTimeout(() => marcador.openPopup(), 1200); 
-                };
-
-                listaCidadesElemento.appendChild(itemLista);
-            });
-        }
-
-        // Carregamento inteligente (Planilha Online com Fallback Local)
-        Papa.parse(URL_PLANILHA_CSV, {
-            download: true,
-            header: true,
-            skipEmptyLines: true,
-            complete: function(resultados) {
-                if(resultados.data && resultados.data.length > 0 && resultados.data[0].nome) {
-                    processarDados(resultados.data);
-                } else {
-                    Papa.parse(dadosLocaisFallback, { header: true, complete: res => processarDados(res.data) });
-                }
-            },
-            error: function(erro) {
-                Papa.parse(dadosLocaisFallback, { header: true, complete: res => processarDados(res.data) });
-            }
+            listaCidadesElemento.appendChild(itemLista);
         });
     </script>
 </body>
