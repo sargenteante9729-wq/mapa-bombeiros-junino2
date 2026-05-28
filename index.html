@@ -1,50 +1,13 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <title>Mapa Operacional</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
-    <style>
-        body { margin: 0; display: flex; height: 100vh; }
-        #menu { width: 300px; background: #fff; overflow-y: auto; }
-        #mapa { flex-grow: 1; }
-        .leaflet-routing-container { display: none; }
-    </style>
-</head>
-<body>
-    <div id="menu">
-        <ul id="lista"></ul>
-    </div>
-    <div id="mapa"></div>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-
-    <script>
-        const mapa = L.map('mapa').setView([-10.9472, -37.0731], 9);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapa);
-        
-        const ARACAJU = L.latLng(-10.9472, -37.0731);
-        let controleRota;
-
-        function desenharRota(lat, lon) {
-            if (controleRota) mapa.removeControl(controleRota);
-            controleRota = L.Routing.control({
-                waypoints: [ARACAJU, L.latLng(lat, lon)],
-                lineOptions: { styles: [{ color: '#d32f2f', weight: 6 }] },
-                createMarker: function() { return null; },
-                addWaypoints: false,
-                fitSelectedRoutes: true
-            }).addTo(mapa);
-        }
-
-        const URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRRv-CBDj8UMUo32h5_wkViXlTX72qRCoKOOM3gKxvpT3XAcYwd_ZemvShx87VPRUNU1B4PTZZkVn0P/pub?output=csv';
-        
-        Papa.parse(URL, {
-            download: true, header: true,
+Papa.parse(URL, {
+            download: true, 
+            header: true,
+            error: function(err, file, inputElem, reason) {
+                alert("Erro ao ler a planilha: " + reason);
+            },
             complete: function(res) {
+                if (res.data.length === 0) {
+                    alert("A planilha está vazia ou não foi lida corretamente!");
+                }
                 res.data.forEach(c => {
                     if (!c.lat || !c.lon) return;
                     L.marker([c.lat, c.lon]).addTo(mapa).bindPopup(c.nome);
@@ -55,6 +18,3 @@
                 });
             }
         });
-    </script>
-</body>
-</html>
