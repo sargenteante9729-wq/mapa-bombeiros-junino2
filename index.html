@@ -6,7 +6,6 @@
     <title>Municípios atendidos nos festejos juninos</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
 
     <style>
         /* ESTILOS E RESPONSIVIDADE */
@@ -20,9 +19,6 @@
         
         #mapa { flex-grow: 1; height: 100%; width: 100%; }
         .marcador-bombeiro { font-size: 24px; text-align: center; line-height: 24px; }
-        
-        /* Oculta a caixa de texto de direções que o plugin de rotas cria por padrão */
-        .leaflet-routing-container { display: none !important; }
         
         /* Estilos do Popup */
         .info-popup { min-width: 250px; max-width: 300px; font-size: 13px; }
@@ -49,50 +45,23 @@
     <div id="mapa"></div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+    
+    <script src="dados.js"></script>
 
     <script>
-        // =========================================================================
-        // SUA PLANILHA MANUAL DE DADOS OPERACIONAIS
-        // =========================================================================
-        const PLANILHA_MANUAL = [
-            {
-                nome: "Aracaju", lat: -10.9472, lon: -37.0731,
-                abts: "1", ur: "2", efetivo: "30+", risco: "Alto", coordenacao: "1º GBM", publico: "30.000+",
-                eventos_programados: "🎤 Vila do Forró: 01 a 30/06\n🎤 Arraiá do Povo: 29/05 a 28/06\n🎤 Forró Caju: 29/05 a 28/07",
-                eventos_complementares: "📍 Praça Santos Dumont (12 e 13/06): 🚑 01 viatura\n📍 Conj. Augusto Franco (04, 05 e 06/06): 🚑 01 viatura"
-            },
-            {
-                nome: "Estância", lat: -11.2683, lon: -37.4386,
-                abts: "1", ur: "1", efetivo: "12", risco: "Médio", coordenacao: "2º GBM", publico: "15.000+",
-                eventos_programados: "🎤 Forró do Abandono\n🎤 Festejos Principais",
-                eventos_complementares: "📍 Centro Cultural: 🚒 Apoio preventivo"
-            },
-            { nome: "Barra dos Coqueiros", lat: -10.9089, lon: -37.0383, abts: "", ur: "", efetivo: "", risco: "", coordenacao: "", publico: "", eventos_programados: "", eventos_complementares: "" },
-            { nome: "Canindé de São Francisco", lat: -9.6617, lon: -37.7897, abts: "", ur: "", efetivo: "", risco: "", coordenacao: "", publico: "", eventos_programados: "", eventos_complementares: "" },
-            { nome: "Cristinápolis", lat: -11.4756, lon: -37.7583, abts: "", ur: "", efetivo: "", risco: "", coordenacao: "", publico: "", eventos_programados: "", eventos_complementares: "" },
-            { nome: "Itabaiana", lat: -10.6850, lon: -37.4278, abts: "", ur: "", efetivo: "", risco: "", coordenacao: "", publico: "", eventos_programados: "", eventos_complementares: "" },
-            { nome: "Nossa Senhora do Socorro", lat: -10.8550, lon: -37.1261, abts: "", ur: "", efetivo: "", risco: "", coordenacao: "", publico: "", eventos_programados: "", eventos_complementares: "" },
-            { nome: "Areia Branca", lat: -10.7589, lon: -37.3139, abts: "", ur: "", efetivo: "", risco: "", coordenacao: "", publico: "", eventos_programados: "", eventos_complementares: "" },
-            { nome: "Capela", lat: -10.5069, lon: -37.0528, abts: "", ur: "", efetivo: "", risco: "", coordenacao: "", publico: "", eventos_programados: "", eventos_complementares: "" },
-            { nome: "Itaporanga d'Ajuda", lat: -10.9981, lon: -37.3078, abts: "", ur: "", efetivo: "", risco: "", coordenacao: "", publico: "", eventos_programados: "", eventos_complementares: "" },
-            { nome: "Lagarto", lat: -10.9139, lon: -37.6681, abts: "", ur: "", efetivo: "", risco: "", coordenacao: "", publico: "", eventos_programados: "", eventos_complementares: "" },
-            { nome: "Rosário do Catete", lat: -10.6956, lon: -37.0350, abts: "", ur: "", efetivo: "", risco: "", coordenacao: "", publico: "", eventos_programados: "", eventos_complementares: "" },
-            { nome: "Tobias Barreto", lat: -11.1839, lon: -38.0000, abts: "", ur: "", efetivo: "", risco: "", coordenacao: "", publico: "", eventos_programados: "", eventos_complementares: "" }
-        ];
-        // =========================================================================
-
         // Inicializar o mapa base centrado em Sergipe
         const mapa = L.map('mapa', { zoomControl: false }).setView([-10.7, -37.4], 8);
         L.control.zoom({ position: 'topright' }).addTo(mapa);
         
-        // Servidor CartoDB Voyager: Extremamente estável
+        // Servidor CartoDB Voyager
         L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { 
             attribution: '© OpenStreetMap contributors © CartoDB' 
         }).addTo(mapa);
         
-        const ARACAJU = L.latLng(-10.9472, -37.0731);
-        let controleRota;
+        const LAT_ARACAJU = -10.9472;
+        const LON_ARACAJU = -37.0731;
+        
+        let linhaVetor;
         let carrinhoAnimado;
         let timerAnimacao;
 
@@ -102,69 +71,51 @@
 
         const listaCidadesElemento = document.getElementById('lista-cidades');
 
-        // Configura e gera o traçado na tela
-        function tracarRotaOperacional(latDestino, lonDestino, marcadorDestino) {
-            if (controleRota) {
-                mapa.removeControl(controleRota);
-            }
-            
-            controleRota = L.Routing.control({
-                waypoints: [ARACAJU, L.latLng(latDestino, lonDestino)],
-                lineOptions: {
-                    styles: [{ color: '#d32f2f', weight: 5, opacity: 0.85 }]
-                },
-                createMarker: function() { return null; }, 
-                addWaypoints: false,
-                draggableWaypoints: false,
-                fitSelectedRoutes: true 
-            }).addTo(mapa);
-
-            // Assim que as estradas forem calculadas, inicia a viagem do carrinho
-            controleRota.on('routesfound', function(e) {
-                const coordenadasEstrada = e.routes[0].coordinates;
-                deslocarViatura(coordenadasEstrada, marcadorDestino);
-            });
-        }
-
-        // Função responsável pelo efeito do carrinho andando na estrada
-        function deslocarViatura(coordenadas, marcadorDestino) {
-            // Limpa qualquer animação rodando antes para evitar bugs caso clique rápido
+        function gerarVetorOperacional(latDestino, lonDestino, marcadorDestino) {
+            if (linhaVetor) mapa.removeLayer(linhaVetor);
             if (timerAnimacao) clearInterval(timerAnimacao);
             if (carrinhoAnimado) mapa.removeLayer(carrinhoAnimado);
 
-            if (!coordenadas || coordenadas.length === 0) return;
+            linhaVetor = L.polyline([[LAT_ARACAJU, LON_ARACAJU], [latDestino, lonDestino]], {
+                color: '#d32f2f', weight: 4, opacity: 0.8, dashArray: '8, 8'
+            }).addTo(mapa);
 
-            // Cria a viatura na posição inicial (Aracaju)
-            carrinhoAnimado = L.marker(coordenadas[0], { icon: iconeBombeiro }).addTo(mapa);
+            mapa.fitBounds(linhaVetor.getBounds(), { padding: [50, 50] });
 
-            let index = 0;
-            const totalPontos = coordenadas.length;
+            const coordenadasTrajeto = [];
+            const framesTotais = 50; 
             
-            // Ritmo do motor: ajusta dinamicamente a velocidade para durar ~1.8 segundos a viagem
-            const totalPassosFrames = 90; 
-            const incremento = Math.max(1, Math.round(totalPontos / totalPassosFrames));
+            for (let i = 0; i <= framesTotais; i++) {
+                const percentual = i / framesTotais;
+                const latAtual = LAT_ARACAJU + (latDestino - LAT_ARACAJU) * percentual;
+                const lonAtual = LON_ARACAJU + (lonDestino - LON_ARACAJU) * percentual;
+                coordenadasTrajeto.push([latAtual, lonAtual]);
+            }
+
+            iniciarDeslocamento(coordenadasTrajeto, marcadorDestino);
+        }
+
+        function iniciarDeslocamento(pontos, marcadorDestino) {
+            carrinhoAnimado = L.marker(pontos[0], { icon: iconeBombeiro }).addTo(mapa);
+            let passo = 0;
 
             timerAnimacao = setInterval(() => {
-                index += incremento;
+                passo++;
                 
-                // Chegou ao destino final
-                if (index >= totalPontos) {
+                if (passo >= pontos.length) {
                     clearInterval(timerAnimacao);
-                    carrinhoAnimado.setLatLng(coordenadas[totalPontos - 1]);
+                    carrinhoAnimado.setLatLng(pontos[pontos.length - 1]);
                     
-                    // Dispara o Balão de Informações Operacionais da Cidade
                     if (marcadorDestino) marcadorDestino.openPopup();
                     
-                    // Apaga o carrinho temporário de animação (já que a cidade já tem o dela fixo)
                     setTimeout(() => {
                         if (carrinhoAnimado) mapa.removeLayer(carrinhoAnimado);
-                    }, 800);
+                    }, 500);
                     return;
                 }
-                
-                // Move o carrinho para o próximo ponto da rodovia
-                carrinhoAnimado.setLatLng(coordenadas[index]);
-            }, 20); // Atualiza a posição a cada 20 milissegundos (Suavidade de 50 FPS)
+
+                carrinhoAnimado.setLatLng(pontos[passo]);
+            }, 25); 
         }
 
         function formatarTexto(texto) {
@@ -198,25 +149,29 @@
             return html;
         }
 
-        // Renderiza as cidades no mapa e gera a lista lateral
-        PLANILHA_MANUAL.forEach(cidade => {
-            const latCidade = parseFloat(cidade.lat);
-            const lonCidade = parseFloat(cidade.lon);
-            const htmlDoBalao = gerarHTMLPopup(cidade);
+        // Renderiza tudo baseando-se na variável do arquivo dados.js
+        if (typeof PLANILHA_MANUAL !== 'undefined') {
+            PLANILHA_MANUAL.forEach(cidade => {
+                const latCidade = parseFloat(cidade.lat);
+                const lonCidade = parseFloat(cidade.lon);
+                const htmlDoBalao = gerarHTMLPopup(cidade);
 
-            const marcador = L.marker([latCidade, lonCidade], { icon: iconeBombeiro })
-                .addTo(mapa)
-                .bindPopup(htmlDoBalao);
+                const marcador = L.marker([latCidade, lonCidade], { icon: iconeBombeiro })
+                    .addTo(mapa)
+                    .bindPopup(htmlDoBalao);
 
-            const itemLista = document.createElement('li');
-            itemLista.textContent = cidade.nome;
-            
-            itemLista.onclick = () => {
-                tracarRotaOperacional(latCidade, lonCidade, marcador);
-            };
+                const itemLista = document.createElement('li');
+                itemLista.textContent = cidade.nome;
+                
+                itemLista.onclick = () => {
+                    gerarVetorOperacional(latCidade, lonCidade, marcador);
+                };
 
-            listaCidadesElemento.appendChild(itemLista);
-        });
+                listaCidadesElemento.appendChild(itemLista);
+            });
+        } else {
+            console.error("Erro: O arquivo 'dados.js' não foi carregado corretamente.");
+        }
     </script>
 </body>
 </html>
