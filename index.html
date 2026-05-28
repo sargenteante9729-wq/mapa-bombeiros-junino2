@@ -15,7 +15,7 @@
         ul#lista-cidades { list-style: none; padding: 0; margin: 0; }
         ul#lista-cidades li { padding: 15px; border-bottom: 1px solid #ddd; cursor: pointer; font-weight: bold; }
         ul#lista-cidades li:hover { background: #ffebee; }
-        #mapa { flex-grow: 1; }
+        #mapa { flex-grow: 1; background-color: #aad3df; } /* Cor de fundo caso o mapa falhe */
         .leaflet-routing-container { display: none; }
     </style>
 </head>
@@ -33,8 +33,14 @@
 
     <script>
         const URL_PLANILHA = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRRv-CBDj8UMUo32h5_wkViXlTX72qRCoKOOM3gKxvpT3XAcYwd_ZemvShx87VPRUNU1B4PTZZkVn0P/pub?output=csv';
+        
+        // Inicializa o mapa
         const mapa = L.map('mapa').setView([-10.7, -37.4], 9);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapa);
+        
+        // Troca para o servidor de mapas do CartoDB (muito estável)
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap, © CartoDB'
+        }).addTo(mapa);
 
         let controleRota;
         const ARACAJU = L.latLng(-10.9472, -37.0731);
@@ -55,14 +61,10 @@
             complete: function(res) {
                 res.data.forEach(cidade => {
                     if (!cidade.lat || !cidade.lon) return;
-                    
                     L.marker([cidade.lat, cidade.lon]).addTo(mapa).bindPopup(cidade.nome);
-
                     const item = document.createElement('li');
                     item.textContent = cidade.nome;
-                    item.onclick = () => {
-                        desenharRota(cidade.lat, cidade.lon);
-                    };
+                    item.onclick = () => { desenharRota(cidade.lat, cidade.lon); };
                     document.getElementById('lista-cidades').appendChild(item);
                 });
             }
