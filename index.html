@@ -2,73 +2,167 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mapa de Festejos - Rotas Operacionais</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Municípios atendidos nos festejos juninos</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
 
     <style>
-        body { margin: 0; padding: 0; display: flex; height: 100vh; font-family: Arial, sans-serif; }
-        #menu-lateral { width: 320px; background: #fff; box-shadow: 2px 0 5px rgba(0,0,0,0.1); z-index: 1000; display: flex; flex-direction: column; }
-        #menu-lateral h2 { background-color: #d32f2f; color: white; margin: 0; padding: 15px; text-align: center; font-size: 1.1rem; }
-        ul#lista-cidades { list-style: none; padding: 0; margin: 0; overflow-y: auto; flex-grow: 1; }
-        ul#lista-cidades li { padding: 15px; border-bottom: 1px solid #eee; cursor: pointer; font-weight: bold; }
-        ul#lista-cidades li:hover { background: #ffebee; color: #d32f2f; }
-        #mapa { flex-grow: 1; height: 100%; }
-        .leaflet-routing-container { display: none; } /* Esconde o painel de texto da rota */
+        /* ESTILOS E RESPONSIVIDADE */
+        body { margin: 0; padding: 0; display: flex; height: 100vh; font-family: Arial, sans-serif; background-color: #f4f4f9; overflow: hidden; }
+        #menu-lateral { width: 320px; background-color: #ffffff; box-shadow: 2px 0 5px rgba(0,0,0,0.1); z-index: 1000; display: flex; flex-direction: column; }
+        #menu-lateral h2 { background-color: #d32f2f; color: white; margin: 0; padding: 15px 20px; font-size: 1.1rem; text-align: center; }
+        ul#lista-cidades { list-style-type: none; padding: 0; margin: 0; overflow-y: auto; flex-grow: 1; -webkit-overflow-scrolling: touch; }
+        ul#lista-cidades li { padding: 15px 20px; border-bottom: 1px solid #eeeeee; cursor: pointer; transition: background-color 0.2s; display: flex; align-items: center; font-weight: bold; color: #333; }
+        ul#lista-cidades li:hover { background-color: #ffebee; color: #d32f2f; }
+        ul#lista-cidades li::before { content: '🚒'; margin-right: 10px; }
+        
+        #mapa { flex-grow: 1; height: 100%; width: 100%; }
+        .marcador-bombeiro { font-size: 24px; text-align: center; line-height: 24px; }
+        
+        /* Estilos do Popup */
+        .info-popup { min-width: 250px; max-width: 300px; font-size: 13px; }
+        .info-popup h3 { margin: 0 0 10px 0; color: #d32f2f; font-size: 18px; border-bottom: 2px solid #d32f2f; padding-bottom: 5px; }
+        .info-popup h4 { margin: 12px 0 5px 0; color: #444; background-color: #f5f5f5; padding: 3px; border-radius: 3px; }
+        .info-popup p { margin: 3px 0; line-height: 1.4; }
+        
+        /* Mensagem de Carregamento */
+        #loading { padding: 20px; text-align: center; color: #666; font-style: italic; }
+
+        @media (max-width: 768px) {
+            body { flex-direction: column-reverse; }
+            #menu-lateral { width: 100%; height: 40vh; box-shadow: 0 -2px 5px rgba(0,0,0,0.1); }
+            #mapa { height: 60vh; }
+            #menu-lateral h2 { font-size: 1rem; padding: 12px 15px; }
+            ul#lista-cidades li { padding: 12px 15px; }
+            .info-popup { min-width: 200px; max-width: 240px; }
+        }
     </style>
 </head>
 <body>
 
     <div id="menu-lateral">
-        <h2>Municípios e Rotas</h2>
+        <h2>Municípios atendidos nos festejos juninos</h2>
+        <div id="loading">A carregar dados operacionais... 📡</div>
         <ul id="lista-cidades"></ul>
     </div>
     <div id="mapa"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
     <script>
-        const URL_PLANILHA = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRRv-CBDj8UMUo32h5_wkViXlTX72qRCoKOOM3gKxvpT3XAcYwd_ZemvShx87VPRUNU1B4PTZZkVn0P/pub?output=csv';
-        const mapa = L.map('mapa').setView([-10.7, -37.4], 9);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapa);
+        // =========================================================================
+        // LINK DA SUA PLANILHA GOOGLE SHEETS
+        // =========================================================================
+        const URL_PLANILHA_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRRv-CBDj8UMUo32h5_wkViXlTX72qRCoKOOM3gKxvpT3XAcYwd_ZemvShx87VPRUNU1B4PTZZkVn0P/pub?output=csv';
+        // =========================================================================
 
-        let controleRota;
-        const ARACAJU = L.latLng(-10.9472, -37.0731);
+        // Inicializar o mapa base centrado em Sergipe
+        const mapa = L.map('mapa', { zoomControl: false }).setView([-10.7, -37.4], 8);
+        L.control.zoom({ position: 'topright' }).addTo(mapa);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors' }).addTo(mapa);
+        
+        const iconeBombeiro = L.divIcon({
+            html: '🚒', className: 'marcador-bombeiro', iconSize: [30, 30], iconAnchor: [15, 15], popupAnchor: [0, -15]
+        });
 
-        function desenharRota(lat, lon) {
-            if (controleRota) mapa.removeControl(controleRota);
-            
-            controleRota = L.Routing.control({
-                waypoints: [ARACAJU, L.latLng(lat, lon)],
-                lineOptions: { styles: [{ color: '#d32f2f', weight: 6, opacity: 0.8 }] },
-                createMarker: function() { return null; },
-                addWaypoints: false,
-                draggableWaypoints: false
-            }).addTo(mapa);
+        const listaCidadesElemento = document.getElementById('lista-cidades');
+        const loadingElemento = document.getElementById('loading');
+
+        // Função para formatar as quebras de linha da folha de cálculo para o formato HTML (<br>)
+        function formatarTexto(texto) {
+            if (!texto) return '';
+            return texto.replace(/\n/g, '<br>');
         }
 
-        Papa.parse(URL_PLANILHA, {
-            download: true, header: true,
-            complete: function(res) {
-                res.data.forEach(cidade => {
-                    if (!cidade.lat || !cidade.lon) return;
+        // Função Motor: Lê as colunas e monta o visual do balão (Popup)
+        function gerarHTMLPopup(linha) {
+            // Se as colunas operacionais estiverem vazias, mostra aviso padrão de "em breve"
+            if (!linha.efetivo && !linha.abts) {
+                return `<div class="info-popup"><h3>${linha.nome}</h3><p>Informações operacionais em breve...</p></div>`;
+            }
 
-                    const marcador = L.marker([cidade.lat, cidade.lon]).addTo(mapa)
-                        .bindPopup(`<b>${cidade.nome}</b>`);
+            let html = `<div class="info-popup"><h3>${linha.nome}</h3>`;
+            
+            html += `<h4>Informações Gerais</h4>
+                     <p>🚒 ABTs: ${linha.abts || '-'}</p>
+                     <p>🚑 UR: ${linha.ur || '-'}</p>
+                     <p>👨‍🚒 Efetivo: ${linha.efetivo || '-'}</p>
+                     <p>⚠️ Risco: ${linha.risco || '-'}</p>
+                     <p>👨‍🚒 Coordenação: ${linha.coordenacao || '-'}</p>
+                     <p>👥 Público Estimado: ${linha.publico || '-'}</p>`;
 
-                    const item = document.createElement('li');
-                    item.textContent = cidade.nome;
-                    item.onclick = () => {
-                        mapa.flyTo([cidade.lat, cidade.lon], 11);
-                        desenharRota(cidade.lat, cidade.lon);
-                        marcador.openPopup();
-                    };
-                    document.getElementById('lista-cidades').appendChild(item);
-                });
+            if (linha.eventos_programados) {
+                html += `<h4>Eventos Programados</h4><p>${formatarTexto(linha.eventos_programados)}</p>`;
+            }
+
+            if (linha.eventos_complementares) {
+                html += `<h4>Eventos Complementares</h4><p>${formatarTexto(linha.eventos_complementares)}</p>`;
+            }
+
+            html += `</div>`;
+            return html;
+        }
+
+        // =========================================================================
+        // DADOS LOCAIS DE EMERGÊNCIA (Fallback)
+        // =========================================================================
+        const dadosLocaisFallback = `nome,lat,lon,abts,ur,efetivo,risco,coordenacao,publico,eventos_programados,eventos_complementares
+Aracaju,-10.9472,-37.0731,1,2,30+,Alto,1º GBM,30.000+,"🎤 Vila do Forró: 01 a 30/06\n🎤 Arraiá do Povo: 29/05 a 28/06\n🎤 Forró Caju: 29/05 a 28/07","📍 Praça Santos Dumont (12 e 13/06): 🚑 01 viatura\n📍 Conj. Augusto Franco (04, 05 e 06/06): 🚑 01 viatura"
+Estância,-11.2683,-37.4386,,,,,,,,,
+Barra dos Coqueiros,-10.9089,-37.0383,,,,,,,,,
+Canindé de São Francisco,-9.6617,-37.7897,,,,,,,,,
+Cristinápolis,-11.4756,-37.7583,,,,,,,,,
+Itabaiana,-10.6850,-37.4278,,,,,,,,,
+Nossa Senhora do Socorro,-10.8550,-37.1261,,,,,,,,,
+Areia Branca,-10.7589,-37.3139,,,,,,,,,
+Capela,-10.5069,-37.0528,,,,,,,,,
+Itaporanga d'Ajuda,-10.9981,-37.3078,,,,,,,,,
+Lagarto,-10.9139,-37.6681,,,,,,,,,
+Rosário do Catete,-10.6956,-37.0350,,,,,,,,,
+Tobias Barreto,-11.1839,-38.0000,,,,,,,,,`;
+
+        // Função para processar e desenhar os marcadores no mapa
+        function processarDados(dadosPlanilha) {
+            loadingElemento.style.display = 'none'; // Remove o texto de carregamento
+            listaCidadesElemento.innerHTML = ''; // Limpa a lista antes de desenhar
+            
+            dadosPlanilha.forEach(cidade => {
+                if (!cidade.lat || !cidade.lon || !cidade.nome) return; 
+
+                const htmlDoBalao = gerarHTMLPopup(cidade);
+
+                const marcador = L.marker([parseFloat(cidade.lat), parseFloat(cidade.lon)], { icon: iconeBombeiro })
+                    .addTo(mapa)
+                    .bindPopup(htmlDoBalao);
+
+                const itemLista = document.createElement('li');
+                itemLista.textContent = cidade.nome;
+                
+                itemLista.onclick = () => {
+                    mapa.flyTo([parseFloat(cidade.lat), parseFloat(cidade.lon)], 13, { duration: 1.5 });
+                    setTimeout(() => marcador.openPopup(), 1500); 
+                };
+
+                listaCidadesElemento.appendChild(itemLista);
+            });
+        }
+
+        // Tenta descarregar a planilha online; se falhar, usa a lista local completa acima
+        Papa.parse(URL_PLANILHA_CSV, {
+            download: true,
+            header: true,
+            skipEmptyLines: true,
+            complete: function(resultados) {
+                if(resultados.data && resultados.data.length > 0 && resultados.data[0].nome) {
+                    processarDados(resultados.data);
+                } else {
+                    Papa.parse(dadosLocaisFallback, { header: true, complete: res => processarDados(res.data) });
+                }
+            },
+            error: function(erro) {
+                Papa.parse(dadosLocaisFallback, { header: true, complete: res => processarDados(res.data) });
             }
         });
     </script>
