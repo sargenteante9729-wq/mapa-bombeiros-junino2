@@ -2,29 +2,51 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Teste de Diagnóstico</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <title>Mapa Festejos Juninos</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
     <style>
-        body { margin: 0; padding: 20px; font-family: sans-serif; }
-        #mapa { height: 400px; width: 100%; background: #eee; border: 2px solid red; }
+        body { margin: 0; display: flex; height: 100vh; font-family: sans-serif; }
+        #menu { width: 300px; background: #fff; overflow-y: auto; border-right: 2px solid #d32f2f; }
+        #menu h2 { background: #d32f2f; color: white; padding: 15px; margin: 0; text-align: center; }
+        ul#lista { list-style: none; padding: 0; margin: 0; }
+        ul#lista li { padding: 15px; border-bottom: 1px solid #ddd; cursor: pointer; font-weight: bold; }
+        ul#lista li:hover { background: #ffebee; }
+        #mapa { flex-grow: 1; }
     </style>
 </head>
 <body>
-    <h1>Diagnóstico do Mapa</h1>
+    <div id="menu">
+        <h2>Municípios</h2>
+        <ul id="lista"></ul>
+    </div>
     <div id="mapa"></div>
-    <p id="status">Testando conexão...</p>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
     <script>
-        const status = document.getElementById('status');
-        try {
-            const mapa = L.map('mapa').setView([-10.9472, -37.0731], 12);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapa);
-            L.marker([-10.9472, -37.0731]).addTo(mapa).bindPopup("Teste de Aracaju");
-            status.innerHTML = "O Leaflet carregou com sucesso. Se o mapa estiver em branco, o servidor do OpenStreetMap está bloqueado.";
-        } catch (e) {
-            status.innerHTML = "Erro ao carregar o Leaflet: " + e.message;
-        }
+        const mapa = L.map('mapa').setView([-10.9472, -37.0731], 9);
+        // Usando o CartoDB como fonte alternativa, caso o OpenStreetMap seja bloqueado novamente
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}.png').addTo(mapa);
+        
+        const URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRRv-CBDj8UMUo32h5_wkViXlTX72qRCoKOOM3gKxvpT3XAcYwd_ZemvShx87VPRUNU1B4PTZZkVn0P/pub?output=csv';
+
+        Papa.parse(URL, {
+            download: true, header: true, skipEmptyLines: true,
+            complete: function(res) {
+                res.data.forEach(c => {
+                    const lat = parseFloat(c.lat);
+                    const lon = parseFloat(c.lon);
+                    if (!isNaN(lat) && !isNaN(lon)) {
+                        L.marker([lat, lon]).addTo(mapa).bindPopup("<b>" + c.nome + "</b>");
+                        const li = document.createElement('li');
+                        li.textContent = c.nome;
+                        li.onclick = () => mapa.setView([lat, lon], 12);
+                        document.getElementById('lista').appendChild(li);
+                    }
+                });
+            }
+        });
     </script>
 </body>
 </html>
