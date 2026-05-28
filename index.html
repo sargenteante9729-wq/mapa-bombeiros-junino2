@@ -1,20 +1,76 @@
-Papa.parse(URL, {
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Mapa de Viaturas</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+    <style>
+        body { margin: 0; display: flex; height: 100vh; font-family: sans-serif; }
+        #menu { width: 300px; background: #fff; overflow-y: auto; border-right: 2px solid #d32f2f; }
+        #menu h2 { background: #d32f2f; color: white; padding: 15px; margin: 0; text-align: center; }
+        ul#lista { list-style: none; padding: 0; margin: 0; }
+        ul#lista li { padding: 15px; border-bottom: 1px solid #ddd; cursor: pointer; font-weight: bold; }
+        ul#lista li:hover { background: #ffebee; }
+        #mapa { flex-grow: 1; }
+        .leaflet-routing-container { display: none; }
+    </style>
+</head>
+<body>
+    <div id="menu">
+        <h2>Municípios</h2>
+        <ul id="lista"></ul>
+    </div>
+    <div id="mapa"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+    <script>
+        // Configuração Inicial
+        const mapa = L.map('mapa').setView([-10.9472, -37.0731], 9);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}.png').addTo(mapa);
+        
+        const ARACAJU = L.latLng(-10.9472, -37.0731);
+        let controleRota;
+
+        function desenharRota(lat, lon) {
+            if (controleRota) mapa.removeControl(controleRota);
+            controleRota = L.Routing.control({
+                waypoints: [ARACAJU, L.latLng(lat, lon)],
+                lineOptions: { styles: [{ color: '#d32f2f', weight: 6 }] },
+                createMarker: function() { return null; },
+                addWaypoints: false,
+                fitSelectedRoutes: true
+            }).addTo(mapa);
+        }
+
+        const URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRRv-CBDj8UMUo32h5_wkViXlTX72qRCoKOOM3gKxvpT3XAcYwd_ZemvShx87VPRUNU1B4PTZZkVn0P/pub?output=csv';
+        
+        // Leitura da Planilha
+        Papa.parse(URL, {
             download: true, 
             header: true,
-            error: function(err, file, inputElem, reason) {
-                alert("Erro ao ler a planilha: " + reason);
-            },
+            skipEmptyLines: true,
             complete: function(res) {
-                if (res.data.length === 0) {
-                    alert("A planilha está vazia ou não foi lida corretamente!");
-                }
+                console.log("Dados da planilha:", res.data); // Verifique o console do F12
                 res.data.forEach(c => {
-                    if (!c.lat || !c.lon) return;
-                    L.marker([c.lat, c.lon]).addTo(mapa).bindPopup(c.nome);
-                    const li = document.createElement('li');
-                    li.textContent = c.nome;
-                    li.onclick = () => desenharRota(c.lat, c.lon);
-                    document.getElementById('lista').appendChild(li);
+                    // Tenta ler colunas, aceitando variações de nome
+                    const nome = c.nome || c.Nome || "Local";
+                    const lat = parseFloat(c.lat || c.Latitude);
+                    const lon = parseFloat(c.lon || c.Longitude);
+                    
+                    if (!isNaN(lat) && !isNaN(lon)) {
+                        L.marker([lat, lon]).addTo(mapa).bindPopup(nome);
+                        const li = document.createElement('li');
+                        li.textContent = nome;
+                        li.onclick = () => desenharRota(lat, lon);
+                        document.getElementById('lista').appendChild(li);
+                    }
                 });
             }
         });
+    </script>
+</body>
+</html>
