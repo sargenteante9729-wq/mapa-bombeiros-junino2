@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Municípios atendidos nos festejos juninos</title>
     
-    <!-- CSS Leaflet -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
 
     <style>
@@ -75,7 +74,7 @@
         }
 
         /* ========================================== */
-        /* CARD DE LEGENDA INTERATIVO                 */
+        /* CARD DE LEGENDA INTERATIVO (BASE)          */
         /* ========================================== */
         .legenda-container {
             background: white;
@@ -128,7 +127,7 @@
         .lc-padrao { border: 2px solid #9e9e9e; background-color: #f5f5f5; }
 
         /* ========================================== */
-        /* CONFIGURAÇÕES RESPONSIVAS                  */
+        /* CONFIGURAÇÕES PARA COMPUTADOR              */
         /* ========================================== */
         @media (min-width: 769px) {
             body { flex-direction: row; }
@@ -136,6 +135,9 @@
             #menu-lateral.recolhido { transform: translateX(-275px); margin-right: -275px; }
         }
 
+        /* ========================================== */
+        /* CORREÇÕES EXCLUSIVAS PARA CELULAR (MOBILE) */
+        /* ========================================== */
         @media (max-width: 768px) {
             body { flex-direction: column; }
             #menu-lateral { width: 100%; height: 40vh; transition: height 0.3s ease; }
@@ -147,12 +149,22 @@
             ul#lista-cidades li { padding: 12px 15px; }
             .info-popup { min-width: 200px; max-width: 240px; }
             
-            .legenda-container { padding: 6px 10px; font-size: 11px; max-width: 130px; }
+            /* Ajustes cruciais para o cartão não cortar no mobile */
+            .legenda-container { 
+                padding: 6px 10px; 
+                font-size: 11px; 
+                max-width: 130px; /* Impede o card de estourar horizontalmente */
+            }
             .legenda-linha { margin-bottom: 4px; }
             .legenda-titulo { margin-bottom: 5px; }
 
-            .leaflet-left { margin-left: 10px !important; }
-            .leaflet-bottom { margin-bottom: 25px !important; }
+            /* Força os blocos de controle do Leaflet a subirem no celular */
+            .leaflet-left {
+                margin-left: 10px !important;
+            }
+            .leaflet-bottom {
+                margin-bottom: 25px !important; /* Levanta o card para escapar da barra nativa do celular */
+            }
         }
     </style>
 </head>
@@ -293,17 +305,6 @@
             }, 25); 
         }
 
-        // FUNÇÃO DE LEITURA À PROVA DE FALHAS (Evita tela em branco)
-        function extrairTextoSeguro(objeto, chavesPossiveis) {
-            for (let chave of chavesPossiveis) {
-                if (objeto[chave] !== undefined && objeto[chave] !== null && objeto[chave] !== '') {
-                    return String(objeto[chave]);
-                }
-            }
-            return null;
-        }
-
-        // MONTAGEM COMPLETA E SEGURA DO POPUP
         function gerarHTMLPopup(linha) {
             if (!linha.efetivo && !linha.abts) {
                 return `<div class="info-popup"><h3>${linha.nome}</h3><p>Informações operacionais em breve...</p></div>`;
@@ -315,18 +316,7 @@
                      <p>👨‍🚒 Coordenação: ${linha.coordenacao || '-'}</p>
                      <p>👥 Público Estimado: ${linha.publico || '-'}</p>`;
 
-            // Captura dinâmica para Eventos Programados
-            const textoProgramados = extrairTextoSeguro(linha, ['eventos_programados', 'Eventos Programados - Festas e celebrações', 'Eventos Programados']);
-            if (textoProgramados) {
-                html += `<h4>Eventos Programados</h4><p>${textoProgramados.replace(/\n/g, '<br>')}</p>`;
-            }
-            
-            // Captura dinâmica para Eventos Complementares
-            const textoComplementares = extrairTextoSeguro(linha, ['eventos_complementares', 'Eventos Complementares - Atividades extras', 'Eventos Complementares']);
-            if (textoComplementares) {
-                html += `<h4>Eventos Complementares</h4><p>${textoComplementares.replace(/\n/g, '<br>')}</p>`;
-            }
-
+            if (linha.eventos_programados) html += `<h4>Eventos Programados</h4><p>${linha.eventos_programados.replace(/\n/g, '<br>')}</p>`;
             html += `</div>`;
             return html;
         }
