@@ -9,7 +9,7 @@
 
     <style>
         /* ========================================== */
-        /* ESTILOS GERAIS (Comuns para ambos)          */
+        /* ESTILOS GERAIS                             */
         /* ========================================== */
         body { margin: 0; padding: 0; display: flex; font-family: Arial, sans-serif; background-color: #f4f4f9; overflow: hidden; height: 100vh; }
         
@@ -69,12 +69,13 @@
         .leaflet-control-layers {
             border-radius: 8px !important;
             box-shadow: 0 2px 6px rgba(0,0,0,0.2) !important;
-            font-family: Arial, sans-serif;
             font-size: 12px;
             font-weight: bold;
         }
 
-        /* ESTILIZAÇÃO DO CARD DE LEGENDA FLUTUANTE */
+        /* ========================================== */
+        /* CARD DE LEGENDA INTERATIVO                 */
+        /* ========================================== */
         .legenda-container {
             background: white;
             padding: 10px 14px;
@@ -83,8 +84,17 @@
             font-family: Arial, sans-serif;
             font-size: 12px;
             color: #333;
-            pointer-events: auto; /* Garante clique no mobile se necessário */
+            border: 2px solid transparent; /* Inicialmente neutro */
+            transition: all 0.3s ease; /* Transição suave de cor e tamanho */
+            pointer-events: auto;
         }
+        
+        /* Classes dinâmicas injetadas via JavaScript */
+        .legenda-alto { border: 2px solid #d32f2f !important; background-color: #fff8f8; }
+        .legenda-medio { border: 2px solid #fbc02d !important; background-color: #fffff2; }
+        .legenda-baixo { border: 2px solid #388e3c !important; background-color: #f8fff8; }
+        .legenda-padrao { border: 2px solid #9e9e9e !important; background-color: #fafafa; }
+
         .legenda-titulo {
             font-weight: bold;
             margin-bottom: 8px;
@@ -100,8 +110,11 @@
             align-items: center;
             margin-bottom: 6px;
             font-weight: bold;
+            transition: all 0.2s ease;
+            transform-origin: left center;
         }
         .legenda-linha:last-child { margin-bottom: 0; }
+        
         .legenda-circulo {
             width: 12px;
             height: 12px;
@@ -109,56 +122,30 @@
             margin-right: 10px;
             display: inline-block;
         }
-        /* Cores espelhadas dos marcadores reais */
         .lc-alto { border: 2px solid #d32f2f; background-color: #ffebee; }
         .lc-medio { border: 2px solid #fbc02d; background-color: #fffde7; }
         .lc-baixo { border: 2px solid #388e3c; background-color: #e8f5e9; }
         .lc-padrao { border: 2px solid #9e9e9e; background-color: #f5f5f5; }
 
         /* ========================================== */
-        /* REGRAS EXCLUSIVAS PARA COMPUTADOR (DESKTOP)*/
+        /* DISPOSITIVOS (COMPUTADOR / CELULAR)        */
         /* ========================================== */
         @media (min-width: 769px) {
             body { flex-direction: row; }
-            #menu-lateral { 
-                width: 320px; 
-                height: 100%; 
-                transition: transform 0.3s ease, margin-right 0.3s ease; 
-            }
-            #menu-lateral.recolhido { 
-                transform: translateX(-275px); 
-                margin-right: -275px; 
-            }
+            #menu-lateral { width: 320px; height: 100%; transition: transform 0.3s ease, margin-right 0.3s ease; }
+            #menu-lateral.recolhido { transform: translateX(-275px); margin-right: -275px; }
         }
 
-        /* ========================================== */
-        /* REGRAS EXCLUSIVAS PARA CELULAR (MOBILE)    */
-        /* ========================================== */
         @media (max-width: 768px) {
             body { flex-direction: column; }
-            
-            #menu-lateral { 
-                width: 100%; 
-                height: 40vh; 
-                transition: height 0.3s ease; 
-            }
-            
-            #menu-lateral.recolhido { 
-                height: 48px !important; 
-            }
-            
-            #menu-lateral.recolhido ul#lista-cidades { 
-                display: none !important; 
-            }
-            
+            #menu-lateral { width: 100%; height: 40vh; transition: height 0.3s ease; }
+            #menu-lateral.recolhido { height: 48px !important; }
+            #menu-lateral.recolhido ul#lista-cidades { display: none !important; }
             #menu-lateral h2 { font-size: 1rem; padding: 12px 15px; }
             #menu-lateral h2::after { content: ' ↕'; font-size: 0.8rem; opacity: 0.8; }
-            
             #mapa { flex-grow: 1; height: auto; width: 100%; }
             ul#lista-cidades li { padding: 12px 15px; }
             .info-popup { min-width: 200px; max-width: 240px; }
-            
-            /* Ajuste sutil na legenda para telas menores */
             .legenda-container { padding: 8px 10px; font-size: 11px; }
             .legenda-linha { margin-bottom: 4px; }
         }
@@ -173,59 +160,77 @@
     <div id="mapa"></div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
-    
     <script src="dados.js"></script>
 
     <script>
         const mapa = L.map('mapa', { zoomControl: false }).setView([-10.7, -37.4], 8);
         L.control.zoom({ position: 'topright' }).addTo(mapa);
         
-        // ==========================================
-        /* DEFINIÇÃO DAS CAMADAS DE FUNDO (BASEMAPS) */
-        // ==========================================
-        const mapaPadrao = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { 
-            attribution: '© OpenStreetMap © CartoDB' 
-        });
-
-        const mapaSatelite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            attribution: 'Tiles &copy; Esri'
-        });
-
-        const mapaEscuro = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { 
-            attribution: '© OpenStreetMap © CartoDB' 
-        });
+        // Camadas de fundo
+        const mapaPadrao = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '© OpenStreetMap © CartoDB' });
+        const mapaSatelite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles &copy; Esri' });
+        const mapaEscuro = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '© OpenStreetMap © CartoDB' });
 
         mapaPadrao.addTo(mapa);
-
-        const mapasDisponiveis = {
-            "🗺️ Mapa Claro": mapaPadrao,
-            "🛰️ Visão de Satélite": mapaSatelite,
-            "🌑 Modo Noturno": mapaEscuro
-        };
-
-        L.control.layers(mapasDisponiveis, null, { 
-            collapsed: true, 
-            position: 'topright' 
-        }).addTo(mapa);
+        L.control.layers({ "🗺️ Mapa Claro": mapaPadrao, "🛰️ Visão de Satélite": mapaSatelite, "🌑 Modo Noturno": mapaEscuro }, null, { position: 'topright' }).addTo(mapa);
         
         // ==========================================
-        /* CRIAÇÃO DA LEGENDA FLUTUANTE NATIVA       */
+        /* CONSTRUÇÃO DA LEGENDA COM IDs EXCLUSIVOS */
         // ==========================================
         const legenda = L.control({ position: 'bottomleft' });
 
         legenda.onAdd = function () {
             const div = L.DomUtil.create('div', 'legenda-container');
+            div.id = 'legenda-painel'; // ID para podermos manipular via JS
             div.innerHTML = `
                 <div class="legenda-titulo">Nível de Risco</div>
-                <div class="legenda-linha"><span class="legenda-circulo lc-alto"></span> Alto Risco</div>
-                <div class="legenda-linha"><span class="legenda-circulo lc-medio"></span> Médio Risco</div>
-                <div class="legenda-linha"><span class="legenda-circulo lc-baixo"></span> Baixo Risco</div>
-                <div class="legenda-linha"><span class="legenda-circulo lc-padrao"></span> Não Definido</div>
+                <div class="legenda-linha" id="leg-alto"><span class="legenda-circulo lc-alto"></span> Alto Risco</div>
+                <div class="legenda-linha" id="leg-medio"><span class="legenda-circulo lc-medio"></span> Médio Risco</div>
+                <div class="legenda-linha" id="leg-baixo"><span class="legenda-circulo lc-baixo"></span> Baixo Risco</div>
+                <div class="legenda-linha" id="leg-padrao"><span class="legenda-circulo lc-padrao"></span> Não Definido</div>
             `;
             return div;
         };
 
         legenda.addTo(mapa);
+
+        // LÓGICA DE INTERATIVIDADE DA LEGENDA
+        function atualizarCorDaLegenda(classeRisco) {
+            const painel = document.getElementById('legenda-painel');
+            const lAlto = document.getElementById('leg-alto');
+            const lMedio = document.getElementById('leg-medio');
+            const lBaixo = document.getElementById('leg-baixo');
+            const lPadrao = document.getElementById('leg-padrao');
+
+            if (!painel) return;
+
+            // Limpa estados anteriores do painel container
+            painel.classList.remove('legenda-alto', 'legenda-medio', 'legenda-baixo', 'legenda-padrao');
+
+            // Coloca todas as linhas em modo "apagado" (fade out) inicialmente
+            const todasLinhas = [lAlto, lMedio, lBaixo, lPadrao];
+            todasLinhas.forEach(linha => {
+                if (linha) {
+                    linha.style.opacity = '0.3';
+                    linha.style.transform = 'scale(1)';
+                }
+            });
+
+            // Ativa o foco e aplica a cor na borda com base na classe de risco selecionada
+            if (classeRisco === 'risco-alto') {
+                painel.classList.add('legenda-alto');
+                if (lAlto) { lAlto.style.opacity = '1'; lAlto.style.transform = 'scale(1.06)'; }
+            } else if (classeRisco === 'risco-medio') {
+                painel.classList.add('legenda-medio');
+                if (lMedio) { lMedio.style.opacity = '1'; lMedio.style.transform = 'scale(1.06)'; }
+            } else if (classeRisco === 'risco-baixo') {
+                painel.classList.add('legenda-baixo');
+                if (lBaixo) { lBaixo.style.opacity = '1'; lBaixo.style.transform = 'scale(1.06)'; }
+            } else {
+                painel.classList.add('legenda-padrao');
+                if (lPadrao) { lPadrao.style.opacity = '1'; lPadrao.style.transform = 'scale(1.06)'; }
+            }
+        }
         // ==========================================
 
         const LAT_ARACAJU = -10.9472;
@@ -244,6 +249,9 @@
         };
 
         function gerarVetorOperacional(latDestino, lonDestino, marcadorDestino, classeRisco) {
+            // Atualiza a legenda imediatamente ao disparar a ação da cidade
+            atualizarCorDaLegenda(classeRisco);
+
             if (linhaVetor) mapa.removeLayer(linhaVetor);
             if (timerAnimacao) clearInterval(timerAnimacao);
             if (carrinhoAnimado) mapa.removeLayer(carrinhoAnimado);
@@ -260,75 +268,46 @@
             mapa.fitBounds(linhaVetor.getBounds(), { padding: [50, 50] });
 
             const coordenadasTrajeto = [];
-            const framesTotais = 50; 
-            
-            for (let i = 0; i <= framesTotais; i++) {
-                const percentual = i / framesTotais;
-                const latAtual = LAT_ARACAJU + (latDestino - LAT_ARACAJU) * percentual;
-                const lonAtual = LON_ARACAJU + (lonDestino - LON_ARACAJU) * percentual;
-                coordenadasTrajeto.push([latAtual, lonAtual]);
+            for (let i = 0; i <= 50; i++) {
+                const percentual = i / 50;
+                coordenadasTrajeto.push([
+                    LAT_ARACAJU + (latDestino - LAT_ARACAJU) * percentual,
+                    LON_ARACAJU + (lonDestino - LON_ARACAJU) * percentual
+                ]);
             }
 
             iniciarDeslocamento(coordenadasTrajeto, marcadorDestino, classeRisco);
         }
 
         function iniciarDeslocamento(pontos, marcadorDestino, classeRisco) {
-            const iconeAnimado = L.divIcon({
-                html: '🚒', 
-                className: `marcador-bombeiro ${classeRisco}`, 
-                iconSize: [36, 36], 
-                iconAnchor: [18, 18]
-            });
-
+            const iconeAnimado = L.divIcon({ html: '🚒', className: `marcador-bombeiro ${classeRisco}`, iconSize: [36, 36], iconAnchor: [18, 18] });
             carrinhoAnimado = L.marker(pontos[0], { icon: iconeAnimado }).addTo(mapa);
             let passo = 0;
 
             timerAnimacao = setInterval(() => {
                 passo++;
-                
                 if (passo >= pontos.length) {
                     clearInterval(timerAnimacao);
-                    carrinhoAnimado.setLatLng(pontos[pontos.length - 1]);
-                    
                     if (marcadorDestino) marcadorDestino.openPopup();
-                    
-                    setTimeout(() => {
-                        if (carrinhoAnimado) mapa.removeLayer(carrinhoAnimado);
-                    }, 500);
+                    setTimeout(() => { if (carrinhoAnimado) mapa.removeLayer(carrinhoAnimado); }, 500);
                     return;
                 }
-
                 carrinhoAnimado.setLatLng(pontos[passo]);
             }, 25); 
-        }
-
-        function formatarTexto(texto) {
-            if (!texto) return '';
-            return texto.replace(/\n/g, '<br>');
         }
 
         function gerarHTMLPopup(linha) {
             if (!linha.efetivo && !linha.abts) {
                 return `<div class="info-popup"><h3>${linha.nome}</h3><p>Informações operacionais em breve...</p></div>`;
             }
-
             let html = `<div class="info-popup"><h3>${linha.nome}</h3>`;
             html += `<h4>Informações Gerais</h4>
-                     <p>🚒 ABTs: ${linha.abts || '-'}</p>
-                     <p>🚑 UR: ${linha.ur || '-'}</p>
-                     <p>👨‍🚒 Efetivo: ${linha.efetivo || '-'}</p>
-                     <p>⚠️ Risco: ${linha.risco || '-'}</p>
+                     <p>🚒 ABTs: ${linha.abts || '-'}&nbsp;&nbsp;|&nbsp;&nbsp;🚑 UR: ${linha.ur || '-'}</p>
+                     <p>👨‍🚒 Efetivo: ${linha.efetivo || '-'}&nbsp;&nbsp;|&nbsp;&nbsp;⚠️ Risco: ${linha.risco || '-'}</p>
                      <p>👨‍🚒 Coordenação: ${linha.coordenacao || '-'}</p>
                      <p>👥 Público Estimado: ${linha.publico || '-'}</p>`;
 
-            if (linha.eventos_programados) {
-                html += `<h4>Eventos Programados</h4><p>${formatarTexto(linha.eventos_programados)}</p>`;
-            }
-
-            if (linha.eventos_complementares) {
-                html += `<h4>Eventos Complementares</h4><p>${formatarTexto(linha.eventos_complementares)}</p>`;
-            }
-
+            if (linha.eventos_programados) html += `<h4>Eventos Programados</h4><p>${linha.eventos_programados.replace(/\n/g, '<br>')}</p>`;
             html += `</div>`;
             return html;
         }
@@ -342,35 +321,26 @@
                 let classeRisco = 'risco-padrao';
                 let indicadorLista = '🚒'; 
 
-                if (cidade.risco === 'Alto') {
-                    classeRisco = 'risco-alto';
-                    indicadorLista = '🔴';
-                } else if (cidade.risco === 'Médio') {
-                    classeRisco = 'risco-medio';
-                    indicadorLista = '🟡';
-                } else if (cidade.risco === 'Baixo') {
-                    classeRisco = 'risco-baixo';
-                    indicadorLista = '🟢';
-                }
+                if (cidade.risco === 'Alto') { classeRisco = 'risco-alto'; indicadorLista = '🔴'; }
+                else if (cidade.risco === 'Médio') { classeRisco = 'risco-medio'; indicadorLista = '🟡'; }
+                else if (cidade.risco === 'Baixo') { classeRisco = 'risco-baixo'; indicadorLista = '🟢'; }
 
-                const iconeCustomizado = L.divIcon({
-                    html: '🚒',
-                    className: `marcador-bombeiro ${classeRisco}`,
-                    iconSize: [36, 36],
-                    iconAnchor: [18, 18],
-                    popupAnchor: [0, -18]
-                });
-
+                const iconeCustomizado = L.divIcon({ html: '🚒', className: `marcador-bombeiro ${classeRisco}`, iconSize: [36, 36], iconAnchor: [18, 18], popupAnchor: [0, -18] });
+                
                 const marcador = L.marker([latCidade, lonCidade], { icon: iconeCustomizado })
                     .addTo(mapa)
                     .bindPopup(htmlDoBalao);
+
+                // Garante que se o operador clicar DIRETO no ícone do mapa, a legenda também mude de cor
+                marcador.on('popupopen', () => {
+                    atualizarCorDaLegenda(classeRisco);
+                });
 
                 const itemLista = document.createElement('li');
                 itemLista.innerHTML = `<span class="status-risco-lista">${indicadorLista}</span> <span>${cidade.nome}</span>`;
                 
                 itemLista.onclick = () => {
                     gerarVetorOperacional(latCidade, lonCidade, marcador, classeRisco);
-                    
                     if (window.innerWidth <= 768) {
                         menuLateral.classList.add('recolhido');
                         setTimeout(() => { mapa.invalidateSize(); }, 320);
@@ -379,8 +349,6 @@
 
                 listaCidadesElemento.appendChild(itemLista);
             });
-        } else {
-            console.error("Erro: O arquivo 'dados.js' não foi carregado corretamente.");
         }
     </script>
 </body>
