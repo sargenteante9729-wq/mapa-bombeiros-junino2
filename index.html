@@ -9,9 +9,18 @@
 
     <style>
         /* ========================================== */
-        /* ESTILOS GERAIS E ESTRUTURA                 */
+        /* ESTRUTURA DO LAYOUT (BLINDADA CONTRA BUGS) */
         /* ========================================== */
-        body { margin: 0; padding: 0; display: flex; font-family: Arial, sans-serif; background-color: #f4f4f9; overflow: hidden; height: 100vh; width: 100vw; }
+        body { 
+            margin: 0; 
+            padding: 0; 
+            display: flex; 
+            font-family: Arial, sans-serif; 
+            background-color: #f4f4f9; 
+            overflow: hidden; 
+            height: 100vh; 
+            width: 100vw; 
+        }
         
         #menu-lateral { 
             background-color: #ffffff; 
@@ -35,7 +44,7 @@
             line-height: 1.4;
         }
 
-        /* DASHBOARD DE TOTAIS OPERACIONAIS */
+        /* DASHBOARD DE TOTAIS */
         #dashboard-totais {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -43,6 +52,7 @@
             padding: 12px;
             background-color: #f8f9fa;
             border-bottom: 1px solid #e0e0e0;
+            flex-shrink: 0;
         }
         .quadro-total {
             background: white;
@@ -67,16 +77,28 @@
             margin-top: 2px;
         }
         
-        ul#lista-cidades { list-style-type: none; padding: 0; margin: 0; overflow-y: auto; flex-grow: 1; -webkit-overflow-scrolling: touch; }
+        /* LISTA DE CIDADES */
+        ul#lista-cidades { 
+            list-style-type: none; 
+            padding: 0; 
+            margin: 0; 
+            overflow-y: auto; 
+            flex-grow: 1; 
+            -webkit-overflow-scrolling: touch; 
+        }
         ul#lista-cidades li { padding: 15px 20px; border-bottom: 1px solid #eeeeee; cursor: pointer; transition: background-color 0.2s; display: flex; align-items: center; font-weight: bold; color: #333; }
         ul#lista-cidades li:hover { background-color: #ffebee; color: #d32f2f; }
         
         .status-risco-lista { margin-right: 12px; font-size: 1.1rem; display: inline-block; }
         
-        /* CONTAINER DO MAPA (Garante que o mapa ocupe o espaço restante) */
-        #mapa { flex: 1; height: 100%; width: 100%; background: #e5e9f0; }
+        /* MAPA CONTAINER */
+        #mapa { 
+            flex: 1; 
+            background: #e5e9f0; 
+            position: relative;
+        }
         
-        /* MARCADORES DO MAPA */
+        /* MARCADORES E POPUPS */
         .marcador-bombeiro {
             font-size: 18px;
             text-align: center;
@@ -89,7 +111,6 @@
             align-items: center;
             justify-content: center;
         }
-        
         .risco-alto { border: 3px solid #d32f2f; background-color: #ffebee; }
         .risco-medio { border: 3px solid #fbc02d; background-color: #fffde7; }
         .risco-baixo { border: 3px solid #388e3c; background-color: #e8f5e9; }
@@ -99,10 +120,9 @@
         .info-popup h3 { margin: 0 0 10px 0; color: #d32f2f; font-size: 18px; border-bottom: 2px solid #d32f2f; padding-bottom: 5px; }
         .info-popup h4 { margin: 12px 0 5px 0; color: #444; background-color: #f5f5f5; padding: 3px; border-radius: 3px; }
         .info-popup p { margin: 3px 0; line-height: 1.4; }
-
         .leaflet-control-layers { border-radius: 8px !important; box-shadow: 0 2px 6px rgba(0,0,0,0.2) !important; font-size: 12px; font-weight: bold; }
 
-        /* PAINEL DA LEGENDA */
+        /* LEGENDA INTERATIVA */
         .legenda-container {
             background: white;
             padding: 10px 14px;
@@ -119,7 +139,6 @@
         .legenda-medio { border: 2px solid #fbc02d !important; background-color: #fffff2; }
         .legenda-baixo { border: 2px solid #388e3c !important; background-color: #f8fff8; }
         .legenda-padrao { border: 2px solid #9e9e9e !important; background-color: #fafafa; }
-
         .legenda-titulo { font-weight: bold; margin-bottom: 8px; text-transform: uppercase; font-size: 10px; color: #555; letter-spacing: 0.6px; border-bottom: 1px solid #eee; padding-bottom: 4px; }
         .legenda-linha { display: flex; align-items: center; margin-bottom: 6px; font-weight: bold; transition: all 0.2s ease; transform-origin: left center; }
         .legenda-linha:last-child { margin-bottom: 0; }
@@ -130,23 +149,27 @@
         .lc-padrao { border: 2px solid #9e9e9e; background-color: #f5f5f5; }
 
         /* ========================================== */
-        /* RESPONSIVIDADE CELULAR / DESKTOP           */
+        /* MEDIA QUERIES REVISADAS (CONTROLE DE ALTURA)*/
         /* ========================================== */
         @media (min-width: 769px) {
             body { flex-direction: row; }
-            #menu-lateral { width: 320px; height: 100%; transition: transform 0.3s ease, margin-right 0.3s ease; }
+            #menu-lateral { width: 320px; height: 100vh; transition: transform 0.3s ease, margin-right 0.3s ease; }
             #menu-lateral.recolhido { transform: translateX(-275px); margin-right: -275px; }
+            #mapa { height: 100vh; }
         }
 
         @media (max-width: 768px) {
             body { flex-direction: column; }
-            #menu-lateral { width: 100%; height: auto; max-height: 45vh; transition: height 0.3s ease; }
+            #menu-lateral { width: 100vw; height: 42vh; transition: height 0.3s ease; }
             #menu-lateral.recolhido { height: 48px !important; }
             #menu-lateral.recolhido ul#lista-cidades,
             #menu-lateral.recolhido #dashboard-totais { display: none !important; }
             #menu-lateral h2 { font-size: 1rem; padding: 12px 15px; }
             #menu-lateral h2::after { content: ' ↕'; font-size: 0.8rem; opacity: 0.8; }
-            #mapa { flex: 1; width: 100%; height: 100%; }
+            
+            #mapa { height: 58vh; width: 100vw; }
+            #menu-lateral.recolhido + #mapa { height: calc(100vh - 48px); }
+            
             ul#lista-cidades li { padding: 12px 15px; }
             .info-popup { min-width: 200px; max-width: 240px; }
             .legenda-container { padding: 6px 10px; font-size: 11px; max-width: 130px; }
@@ -188,13 +211,7 @@
     <script src="dados.js"></script>
 
     <script>
-        // SISTEMA DE DIAGNÓSTICO: Avisa na tela se o JS travar por algum motivo externo
-        window.onerror = function(msg, url, line) {
-            alert("Atenção! Ocorreu um erro no script:\n" + msg + "\nLinha: " + line);
-            return false;
-        };
-
-        // 1. Inicialização Segura do Mapa Leaflet
+        // Inicialização do Mapa Leaflet
         const mapa = L.map('mapa', { zoomControl: false }).setView([-10.7, -37.4], 8);
         L.control.zoom({ position: 'topright' }).addTo(mapa);
         
@@ -205,7 +222,10 @@
         mapaPadrao.addTo(mapa);
         L.control.layers({ "🗺️ Mapa Claro": mapaPadrao, "🛰️ Visão de Satélite": mapaSatelite, "🌑 Modo Noturno": mapaEscuro }, null, { position: 'topright' }).addTo(mapa);
         
-        // 2. Construção da Legenda Lateral Interativa
+        // Correção de renderização inicial do Leaflet em Flexbox
+        setTimeout(() => { mapa.invalidateSize(); }, 200);
+
+        // Construção da Legenda
         const legenda = L.control({ position: 'bottomleft' });
         legenda.onAdd = function () {
             const div = L.DomUtil.create('div', 'legenda-container');
@@ -246,175 +266,4 @@
                 if (lBaixo) { lBaixo.style.opacity = '1'; lBaixo.style.transform = 'scale(1.05)'; }
             } else {
                 painel.classList.add('legenda-padrao');
-                if (lPadrao) { lPadrao.style.opacity = '1'; lPadrao.style.transform = 'scale(1.05)'; }
-            }
-        }
-
-        // 3. Controle e Animação dos Vetores de Deslocamento (Viaturas)
-        const LAT_ARACAJU = -10.9472;
-        const LON_ARACAJU = -37.0731;
-        let linhaVetor, carrinhoAnimado, timerAnimacao;
-
-        const listaCidadesElemento = document.getElementById('lista-cidades');
-        const menuLateral = document.getElementById('menu-lateral');
-
-        document.querySelector('#menu-lateral h2').onclick = () => {
-            menuLateral.classList.toggle('recolhido');
-            setTimeout(() => { mapa.invalidateSize(); }, 320);
-        };
-
-        function gerarVetorOperacional(latDestino, lonDestino, marcadorDestino, classeRisco) {
-            atualizarCorDaLegenda(classeRisco);
-            if (linhaVetor) mapa.removeLayer(linhaVetor);
-            if (timerAnimacao) clearInterval(timerAnimacao);
-            if (carrinhoAnimado) mapa.removeLayer(carrinhoAnimado);
-
-            let corLinha = '#9e9e9e';
-            if (classeRisco === 'risco-alto') corLinha = '#d32f2f';
-            if (classeRisco === 'risco-medio') corLinha = '#fbc02d';
-            if (classeRisco === 'risco-baixo') corLinha = '#388e3c';
-
-            linhaVetor = L.polyline([[LAT_ARACAJU, LON_ARACAJU], [latDestino, lonDestino]], {
-                color: corLinha, weight: 4, opacity: 0.8, dashArray: '8, 8'
-            }).addTo(mapa);
-
-            mapa.fitBounds(linhaVetor.getBounds(), { padding: [50, 50] });
-
-            const coordenadasTrajeto = [];
-            for (let i = 0; i <= 50; i++) {
-                const percentual = i / 50;
-                coordenadasTrajeto.push([
-                    LAT_ARACAJU + (latDestino - LAT_ARACAJU) * percentual,
-                    LON_ARACAJU + (lonDestino - LON_ARACAJU) * percentual
-                ]);
-            }
-            iniciarDeslocamento(coordenadasTrajeto, marcadorDestino, classeRisco);
-        }
-
-        function iniciarDeslocamento(pontos, marcadorDestino, classeRisco) {
-            const iconeAnimado = L.divIcon({ html: '🚒', className: `marcador-bombeiro ${classeRisco}`, iconSize: [36, 36], iconAnchor: [18, 18] });
-            carrinhoAnimado = L.marker(pontos[0], { icon: iconeAnimado }).addTo(mapa);
-            let passo = 0;
-
-            timerAnimacao = setInterval(() => {
-                passo++;
-                if (passo >= pontos.length) {
-                    clearInterval(timerAnimacao);
-                    if (marcadorDestino) marcadorDestino.openPopup();
-                    setTimeout(() => { if (carrinhoAnimado) mapa.removeLayer(carrinhoAnimado); }, 500);
-                    return;
-                }
-                carrinhoAnimado.setLatLng(pontos[passo]);
-            }, 25); 
-        }
-
-        // 4. Tratamento e Limpeza Segura dos Dados de Entrada
-        function obterCampoSeguro(objeto, chavesAceitas) {
-            for (let chave of chavesAceitas) {
-                if (objeto[chave] !== undefined && objeto[chave] !== null && objeto[chave] !== '') {
-                    return objeto[chave];
-                }
-            }
-            return '';
-        }
-
-        function extrairNumeroParaSoma(valor) {
-            if (!valor) return 0;
-            if (typeof valor === 'number') return valor;
-            const numeros_filtrados = String(valor).match(/\d+/g);
-            if (!numeros_filtrados) return 0;
-            return numeros_filtrados.reduce((acc, num) => acc + parseInt(num, 10), 0);
-        }
-
-        function gerarHTMLPopup(cidade) {
-            let html = `<div class="info-popup"><h3>${cidade.nome}</h3>`;
-            html += `<h4>Informações Gerais</h4>
-                     <p>🚒 ABTs: ${cidade.abts || '-'}&nbsp;&nbsp;|&nbsp;&nbsp;🚑 UR: ${cidade.ur || '-'}</p>
-                     <p>👨‍🚒 Efetivo: ${cidade.efetivo || '-'}&nbsp;&nbsp;|&nbsp;&nbsp;⚠️ Risco: ${cidade.risco || '-'}</p>
-                     <p>👨‍🚒 Coordenação: ${cidade.coordenacao || '-'}</p>
-                     <p>👥 Público Estimado: ${cidade.publico || '-'}</p>`;
-
-            if (cidade.eventos_programados) {
-                const textoProg = String(cidade.eventos_programados).replace(/\n/g, '<br>');
-                html += `<h4>Eventos Programados</h4><p>${textoProg}</p>`;
-            }
-            if (cidade.eventos_complementares) {
-                const textoComp = String(cidade.eventos_complementares).replace(/\n/g, '<br>');
-                html += `<h4>Eventos Complementares</h4><p>${textoComp}</p>`;
-            }
-            html += `</div>`;
-            return html;
-        }
-
-        // 5. Processamento dos Dados e Alimentação da Tela
-        let totalCidades = 0;
-        let totalEfetivo = 0;
-        let totalABTs = 0;
-        let totalURs = 0;
-
-        if (typeof PLANILHA_MANUAL !== 'undefined' && Array.isArray(PLANILHA_MANUAL)) {
-            PLANILHA_MANUAL.forEach(itemRaw => {
-                try {
-                    const latRaw = obterCampoSeguro(itemRaw, ['lat', 'Latitude', 'Lat', 'LAT', 'latitude']);
-                    const lonRaw = obterCampoSeguro(itemRaw, ['lon', 'long', 'Longitude', 'Lon', 'Lng', 'LON', 'longitude']);
-                    
-                    const latCidade = parseFloat(latRaw);
-                    const lonCidade = parseFloat(lonRaw);
-
-                    if (isNaN(latCidade) || isNaN(lonCidade)) return;
-
-                    const cidadePadronizada = {
-                        nome: obterCampoSeguro(itemRaw, ['nome', 'Nome', 'Município', 'Municipio', 'Cidade']) || 'Município sem nome',
-                        risco: obterCampoSeguro(itemRaw, ['risco', 'Risco', 'Nível de Risco', 'risco ']),
-                        abts: obterCampoSeguro(itemRaw, ['abts', 'ABTs', 'abt', 'ABT']),
-                        ur: obterCampoSeguro(itemRaw, ['ur', 'UR']),
-                        efetivo: obterCampoSeguro(itemRaw, ['efetivo', 'Efetivo']),
-                        coordenacao: obterCampoSeguro(itemRaw, ['coordenacao', 'Coordenação', 'coordenador', 'Coordenação / Comando']),
-                        publico: obterCampoSeguro(itemRaw, ['publico', 'Público', 'Público Estimado']),
-                        eventos_programados: obterCampoSeguro(itemRaw, ['eventos_programados', 'Eventos Programados - Festas e celebrações', 'Eventos Programados']),
-                        eventos_complementares: obterCampoSeguro(itemRaw, ['eventos_complementares', 'Eventos Complementares - Atividades extras', 'Eventos Complementares'])
-                    };
-
-                    // Acumuladores globais do Dashboard
-                    totalCidades++;
-                    totalEfetivo += extrairNumeroParaSoma(cidadePadronizada.efetivo);
-                    totalABTs += extrairNumeroParaSoma(cidadePadronizada.abts);
-                    totalURs += extrairNumeroParaSoma(cidadePadronizada.ur);
-
-                    let classeRisco = 'risco-padrao';
-                    let indicadorLista = '🚒'; 
-
-                    if (cidadePadronizada.risco === 'Alto') { classeRisco = 'risco-alto'; indicadorLista = '🔴'; }
-                    else if (cidadePadronizada.risco === 'Médio') { classeRisco = 'risco-medio'; indicadorLista = '🟡'; }
-                    else if (cidadePadronizada.risco === 'Baixo') { classeRisco = 'risco-baixo'; indicadorLista = '🟢'; }
-
-                    const htmlDoBalao = gerarHTMLPopup(cidadePadronizada);
-                    const iconeCustomizado = L.divIcon({ html: '🚒', className: `marcador-bombeiro ${classeRisco}`, iconSize: [36, 36], iconAnchor: [18, 18], popupAnchor: [0, -18] });
-                    
-                    const marcador = L.marker([latCidade, lonCidade], { icon: iconeCustomizado })
-                        .addTo(mapa)
-                        .bindPopup(htmlDoBalao);
-
-                    marcador.on('popupopen', () => { atualizarCorDaLegenda(classeRisco); });
-
-                    const itemLista = document.createElement('li');
-                    itemLista.innerHTML = `<span class="status-risco-lista">${indicadorLista}</span> <span>${cidadePadronizada.nome}</span>`;
-                    
-                    itemLista.onclick = () => {
-                        gerarVetorOperacional(latCidade, lonCidade, marcador, classeRisco);
-                        if (window.innerWidth <= 768) {
-                            menuLateral.classList.add('recolhido');
-                            setTimeout(() => { mapa.invalidateSize(); }, 320);
-                        }
-                    };
-
-                    listaCidadesElemento.appendChild(itemLista);
-                } catch (erroInterno) {
-                    console.warn("Item ignorado devido a dados corrompidos:", erroInterno);
-                }
-            });
-
-            // Renderiza os valores finais calculados no Painel
-            document.getElementById('tot-cidades').innerText = totalCidades;
-            document.getElementById('tot-efetivo').innerText = totalEfetivo;
-            document.getElementById('tot-abts').
+                if (lPadrao) { lPadrao.style.opacity = '1'; lPadrao.style.transform = '
