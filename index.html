@@ -3,41 +3,188 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mapa Operacional - Bombeiros SE</title>
+    <title>Municípios atendidos nos festejos juninos</title>
+    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
     <style>
-        body, html { height: 100%; margin: 0; padding: 0; display: flex; overflow: hidden; }
+        html, body {
+            height: 100% !important;
+            width: 100% !important;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: Arial, sans-serif; 
+            background-color: #f4f4f9; 
+        }
+
+        body { 
+            display: flex; 
+        }
         
         #menu-lateral { 
-            width: 320px; height: 100vh; background: white; 
-            display: flex; flex-direction: column; z-index: 1000;
-            box-shadow: 2px 0 5px rgba(0,0,0,0.2);
+            background-color: #ffffff; 
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1); 
+            z-index: 1000; 
+            display: flex; 
+            flex-direction: column;
+            overflow: hidden;
+            flex-shrink: 0;
         }
         
-        #mapa { 
+        #menu-lateral h2 { 
+            background-color: #d32f2f; 
+            color: white; 
+            margin: 0; 
+            padding: 15px 20px; 
+            font-size: 1.1rem; 
+            text-align: center; 
+            cursor: pointer; 
+            user-select: none;
+            line-height: 1.4;
+        }
+
+        #dashboard-totais {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            padding: 12px;
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #e0e0e0;
+            flex-shrink: 0;
+        }
+        .quadro-total {
+            background: white;
+            padding: 8px;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            border-left: 3px solid #d32f2f;
+        }
+        .total-numero {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #222;
+        }
+        .total-rotulo {
+            font-size: 0.75rem;
+            color: #666;
+            font-weight: bold;
+            margin-top: 2px;
+        }
+        
+        ul#lista-cidades { 
+            list-style-type: none; 
+            padding: 0; 
+            margin: 0; 
+            overflow-y: auto; 
             flex-grow: 1; 
-            height: 100vh; 
-            display: block; /* Garante visibilidade */
-            background: #ddd;
+            -webkit-overflow-scrolling: touch; 
+        }
+        ul#lista-cidades li { padding: 15px 20px; border-bottom: 1px solid #eeeeee; cursor: pointer; transition: background-color 0.2s; display: flex; align-items: center; font-weight: bold; color: #333; }
+        ul#lista-cidades li:hover { background-color: #ffebee; color: #d32f2f; }
+        
+        .status-risco-lista { margin-right: 12px; font-size: 1.1rem; display: inline-block; }
+        
+        /* Força o contêiner do mapa a empurrar e ocupar o espaço restante */
+        #mapa { 
+            flex-grow: 1;
+            height: 100vh !important;
+            position: relative;
+            background: #e5e9f0;
+        }
+        
+        .marcador-bombeiro {
+            font-size: 18px;
+            text-align: center;
+            width: 36px !important;
+            height: 36px !important;
+            border-radius: 50%;
+            background: white;
+            box-shadow: 0 3px 7px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .risco-alto { border: 3px solid #d32f2f; background-color: #ffebee; }
+        .risco-medio { border: 3px solid #fbc02d; background-color: #fffde7; }
+        .risco-baixo { border: 3px solid #388e3c; background-color: #e8f5e9; }
+        .risco-padrao { border: 3px solid #9e9e9e; background-color: #f5f5f5; }
+        
+        .info-popup { min-width: 250px; max-width: 300px; font-size: 13px; }
+        .info-popup h3 { margin: 0 0 10px 0; color: #d32f2f; font-size: 18px; border-bottom: 2px solid #d32f2f; padding-bottom: 5px; }
+        .info-popup h4 { margin: 12px 0 5px 0; color: #444; background-color: #f5f5f5; padding: 3px; border-radius: 3px; }
+        .info-popup p { margin: 3px 0; line-height: 1.4; }
+
+        .painel-rota-osrm {
+            background-color: #fff3e0;
+            padding: 8px 10px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            border-left: 4px solid #ff9800;
+            font-size: 11.5px;
+            font-weight: bold;
+            color: #e65100;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
         }
 
-        #menu-lateral h2 { background: #d32f2f; color: white; margin: 0; padding: 15px; font-size: 1rem; text-align: center; }
-        
-        ul#lista-cidades { list-style: none; padding: 0; margin: 0; overflow-y: auto; flex-grow: 1; }
-        ul#lista-cidades li { padding: 15px; border-bottom: 1px solid #eee; cursor: pointer; font-weight: bold; }
-        ul#lista-cidades li:hover { background: #ffebee; }
+        .legenda-container {
+            background: white;
+            padding: 10px 14px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            font-size: 12px;
+            color: #333;
+        }
+        .legenda-titulo { font-weight: bold; margin-bottom: 8px; text-transform: uppercase; font-size: 10px; color: #555; border-bottom: 1px solid #eee; padding-bottom: 4px; }
+        .legenda-linha { display: flex; align-items: center; margin-bottom: 6px; font-weight: bold; }
+        .legenda-circulo { width: 12px; height: 12px; border-radius: 50%; margin-right: 10px; display: inline-block; }
+        .lc-alto { border: 2px solid #d32f2f; background-color: #ffebee; }
+        .lc-medio { border: 2px solid #fbc02d; background-color: #fffde7; }
+        .lc-baixo { border: 2px solid #388e3c; background-color: #e8f5e9; }
+        .lc-padrao { border: 2px solid #9e9e9e; background-color: #f5f5f5; }
 
-        .marcador-bombeiro {
-            background: #d32f2f; color: white; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 14px; border: 2px solid white;
+        @media (min-width: 769px) {
+            body { flex-direction: row; }
+            #menu-lateral { width: 320px; height: 100vh; }
+        }
+
+        @media (max-width: 768px) {
+            body { flex-direction: column; }
+            #menu-lateral { width: 100vw; max-height: 40vh; }
+            #mapa { height: 60vh !important; }
         }
     </style>
 </head>
 <body>
 
     <div id="menu-lateral">
-        <h2>Quartel QCG - Saída</h2>
+        <h2>Municípios atendidos nos festejos juninos</h2>
+        
+        <div id="dashboard-totais">
+            <div class="quadro-total">
+                <span class="total-numero" id="tot-cidades">0</span>
+                <span class="total-rotulo">Cidades</span>
+            </div>
+            <div class="quadro-total">
+                <span class="total-numero" id="tot-efetivo">0</span>
+                <span class="total-rotulo">👨‍🚒 Efetivo</span>
+            </div>
+            <div class="quadro-total">
+                <span class="total-numero" id="tot-abts">0</span>
+                <span class="total-rotulo">🚒 ABTs</span>
+            </div>
+            <div class="quadro-total">
+                <span class="total-numero" id="tot-urs">0</span>
+                <span class="total-rotulo">🚑 URs</span>
+            </div>
+        </div>
+
         <ul id="lista-cidades"></ul>
     </div>
     
@@ -47,54 +194,188 @@
     <script src="dados.js"></script>
 
     <script>
-        // Coordenadas exatas do Quartel na Rua Siriri
-        const LAT_QUARTEL = -10.9126;
-        const LON_QUARTEL = -37.0543;
+        // Inicialização padrão do mapa Leaflet
+        const mapa = L.map('mapa', { zoomControl: false }).setView([-10.7, -37.4], 8);
+        L.control.zoom({ position: 'topright' }).addTo(mapa);
+        
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { 
+            attribution: '© OpenStreetMap' 
+        }).addTo(mapa);
 
-        const mapa = L.map('mapa').setView([-10.7, -37.4], 8);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(mapa);
+        // Adiciona legenda fixa no canto inferior esquerdo
+        const legenda = L.control({ position: 'bottomleft' });
+        legenda.onAdd = function () {
+            const div = L.DomUtil.create('div', 'legenda-container');
+            div.innerHTML = `
+                <div class="legenda-titulo">Nível de Risco</div>
+                <div class="legenda-linha"><span class="legenda-circulo lc-alto"></span> Alto Risco</div>
+                <div class="legenda-linha"><span class="legenda-circulo lc-medio"></span> Médio Risco</div>
+                <div class="legenda-linha"><span class="legenda-circulo lc-baixo"></span> Baixo Risco</div>
+                <div class="legenda-linha"><span class="legenda-circulo lc-padrao"></span> Não Definido</div>
+            `;
+            return div;
+        };
+        legenda.addTo(mapa);
 
-        // Marcador do Quartel
-        L.marker([LAT_QUARTEL, LON_QUARTEL]).addTo(mapa)
-            .bindPopup("<b>QCG - Bombeiros</b><br>Rua Siriri, 805");
+        const LAT_ARACAJU = -10.9472;
+        const LON_ARACAJU = -37.0731;
+        let linhaVetor, carrinhoAnimado, timerAnimacao;
 
-        let linhaRota, carro;
+        function gerarVetorOperacional(latDestino, lonDestino, marcadorDestino, classeRisco, cidadeDados) {
+            if (linhaVetor) mapa.removeLayer(linhaVetor);
+            if (timerAnimacao) clearInterval(timerAnimacao);
+            if (carrinhoAnimado) mapa.removeLayer(carrinhoAnimado);
 
-        function desenharRota(lat, lon) {
-            if (linhaRota) mapa.removeLayer(linhaRota);
-            if (carro) mapa.removeLayer(carro);
+            let corLinha = '#9e9e9e';
+            if (classeRisco === 'risco-alto') corLinha = '#d32f2f';
+            if (classeRisco === 'risco-medio') corLinha = '#fbc02d';
+            if (classeRisco === 'risco-baixo') corLinha = '#388e3c';
 
-            const url = `https://router.project-osrm.org/route/v1/driving/${LON_QUARTEL},${LAT_QUARTEL};${lon},${lat}?overview=full&geometries=geojson`;
+            const urlOSRM = `https://router.project-osrm.org/route/v1/driving/${LON_ARACAJU},${LAT_ARACAJU};${lonDestino},${latDestino}?overview=full&geometries=geojson`;
 
-            fetch(url).then(r => r.json()).then(data => {
-                const coords = data.routes[0].geometry.coordinates.map(p => [p[1], p[0]]);
-                linhaRota = L.polyline(coords, {color: '#d32f2f', weight: 5}).addTo(mapa);
-                mapa.fitBounds(linhaRota.getBounds());
-                
-                // Animação simples do carro
-                carro = L.marker(coords[0], {
-                    icon: L.divIcon({className: 'marcador-bombeiro', html: '🚒'})
-                }).addTo(mapa);
+            fetch(urlOSRM)
+                .then(res => res.json())
+                .then(dadosRota => {
+                    if (!dadosRota.routes || dadosRota.routes.length === 0) throw new Error();
 
-                let i = 0;
-                const animar = setInterval(() => {
-                    if (i >= coords.length) clearInterval(animar);
-                    else carro.setLatLng(coords[i++]);
-                }, 50);
-            });
+                    const rota = dadosRota.routes[0];
+                    const coordenadas = rota.geometry.coordinates.map(p => [p[1], p[0]]);
+                    
+                    const dist = (rota.distance / 1000).toFixed(1);
+                    const tempoMin = Math.round(rota.duration / 60);
+                    const tempoTxt = tempoMin > 60 ? `${Math.floor(tempoMin/60)}h ${tempoMin%60}min` : `${tempoMin} min`;
+
+                    if (marcadorDestino) {
+                        marcadorDestino.setPopupContent(gerarHTMLPopup(cidadeDados, dist, tempoTxt));
+                    }
+
+                    linhaVetor = L.polyline(coordinates = coordenadas, { color: corLinha, weight: 4, opacity: 0.85, dashArray: '4, 6' }).addTo(mapa);
+                    mapa.fitBounds(linhaVetor.getBounds(), { padding: [40, 40] });
+                    iniciarDeslocamento(coordenadas, marcadorDestino, classeRisco);
+                })
+                .catch(() => {
+                    const pontosFallback = [[LAT_ARACAJU, LON_ARACAJU], [latDestino, lonDestino]];
+                    if (marcadorDestino) {
+                        marcadorDestino.setPopupContent(gerarHTMLPopup(cidadeDados));
+                    }
+                    linhaVetor = L.polyline(pontosFallback, { color: corLinha, weight: 4, opacity: 0.8 }).addTo(mapa);
+                    mapa.fitBounds(linhaVetor.getBounds(), { padding: [50, 50] });
+                    iniciarDeslocamento(pontosFallback, marcadorDestino, classeRisco);
+                });
         }
 
-        // Listagem dos dados
-        const lista = document.getElementById('lista-cidades');
-        PLANILHA_MANUAL.forEach(item => {
-            const li = document.createElement('li');
-            li.textContent = item.nome;
-            li.onclick = () => desenharRota(item.lat, item.lon);
-            lista.appendChild(li);
-        });
+        function iniciarDeslocamento(pontos, marcadorDestino, classeRisco) {
+            const icone = L.divIcon({ html: '🚒', className: `marcador-bombeiro ${classeRisco}`, iconSize: [36, 36], iconAnchor: [18, 18] });
+            carrinhoAnimado = L.marker(pontos[0], { icon: icone }).addTo(mapa);
+            
+            let passo = 0;
+            const total = pontos.length;
+            const salto = Math.max(1, Math.round(total / 50));
 
-        // Força o mapa a aparecer
-        setTimeout(() => mapa.invalidateSize(), 500);
+            timerAnimacao = setInterval(() => {
+                passo += salto;
+                if (passo >= total - 1) {
+                    clearInterval(timerAnimacao);
+                    if (carrinhoAnimado) carrinhoAnimado.setLatLng(pontos[total - 1]);
+                    if (marcadorDestino) marcadorDestino.openPopup();
+                    setTimeout(() => { if (carrinhoAnimado) mapa.removeLayer(carrinhoAnimado); }, 400);
+                    return;
+                }
+                carrinhoAnimado.setLatLng(pontos[passo]);
+            }, 30); 
+        }
+
+        function obterCampoSeguro(objeto, chaves) {
+            for (let c of chaves) {
+                if (objeto[c] !== undefined && objeto[c] !== null && objeto[c] !== '') return objeto[c];
+            }
+            return '';
+        }
+
+        function extrairNumeroParaSoma(v) {
+            if (!v) return 0;
+            if (typeof v === 'number') return v;
+            const matches = String(v).match(/\d+/g);
+            return matches ? matches.reduce((acc, n) => acc + parseInt(n, 10), 0) : 0;
+        }
+
+        function gerarHTMLPopup(cidade, distancia = null, tempo = null) {
+            let html = `<div class="info-popup"><h3>${cidade.nome}</h3>`;
+            if (distancia && tempo) {
+                html += `<div class="painel-rota-osrm">
+                            <span>🛣️ Rota Rodoviária Real</span>
+                            <span>📏 Distância: ${distancia} km</span>
+                            <span>⏱️ Tempo Estimado: ${tempo}</span>
+                         </div>`;
+            }
+            html += `<h4>Informações Gerais</h4>
+                     <p>🚒 ABTs: ${cidade.abts || '-'}&nbsp;&nbsp;|&nbsp;&nbsp;🚑 UR: ${cidade.ur || '-'}</p>
+                     <p>👨‍🚒 Efetivo: ${cidade.efetivo || '-'}&nbsp;&nbsp;|&nbsp;&nbsp;⚠️ Risco: ${cidade.risco || '-'}</p>
+                     <p>👨‍🚒 Coordenação: ${cidade.coordenacao || '-'}</p>
+                     <p>👥 Público Estimado: ${cidade.publico || '-'}</p>`;
+
+            if (cidade.eventos_programados) html += `<h4>Eventos Programados</h4><p>${String(cidade.eventos_programados).replace(/\n/g, '<br>')}</p>`;
+            html += `</div>`;
+            return html;
+        }
+
+        let tCidades = 0, tEfetivo = 0, tAbts = 0, tUrs = 0;
+        const listaUl = document.getElementById('lista-cidades');
+
+        if (typeof PLANILHA_MANUAL !== 'undefined' && Array.isArray(PLANILHA_MANUAL)) {
+            PLANILHA_MANUAL.forEach(itemRaw => {
+                const lat = parseFloat(obterCampoSeguro(itemRaw, ['lat', 'Latitude', 'Lat', 'latitude']));
+                const lon = parseFloat(obterCampoSeguro(itemRaw, ['lon', 'Longitude', 'Lon', 'longitude']));
+                
+                if (isNaN(lat) || isNaN(lon)) return;
+
+                const cidade = {
+                    nome: obterCampoSeguro(itemRaw, ['nome', 'Nome', 'Município', 'Cidade']) || 'Município',
+                    risco: obterCampoSeguro(itemRaw, ['risco', 'Risco', 'Nível de Risco']),
+                    abts: obterCampoSeguro(itemRaw, ['abts', 'ABTs', 'abt']),
+                    ur: obterCampoSeguro(itemRaw, ['ur', 'UR']),
+                    efetivo: obterCampoSeguro(itemRaw, ['efetivo', 'Efetivo']),
+                    coordenacao: obterCampoSeguro(itemRaw, ['coordenacao', 'Coordenação', 'coordenador']),
+                    publico: obterCampoSeguro(itemRaw, ['publico', 'Público']),
+                    eventos_programados: obterCampoSeguro(itemRaw, ['eventos_programados', 'Eventos Programados'])
+                };
+
+                tCidades++;
+                tEfetivo += extrairNumeroParaSoma(cidade.efetivo);
+                tAbts += extrairNumeroParaSoma(cidade.abts);
+                tUrs += extrairNumeroParaSoma(cidade.ur);
+
+                let classeRisco = 'risco-padrao', indLista = '🚒'; 
+                if (cidade.risco === 'Alto') { classeRisco = 'risco-alto'; indLista = '🔴'; }
+                else if (cidade.risco === 'Médio') { classeRisco = 'risco-medio'; indLista = '🟡'; }
+                else if (cidade.risco === 'Baixo') { classeRisco = 'risco-baixo'; indLista = '🟢'; }
+
+                const icone = L.divIcon({ html: '🚒', className: `marcador-bombeiro ${classeRisco}`, iconSize: [36, 36], iconAnchor: [18, 18], popupAnchor: [0, -18] });
+                const marcador = L.marker([lat, lon], { icon: icone }).addTo(mapa).bindPopup(gerarHTMLPopup(cidade));
+
+                marcador.on('click', () => {
+                    gerarVetorOperacional(lat, lon, marcador, classeRisco, cidade);
+                });
+
+                const li = document.createElement('li');
+                li.innerHTML = `<span class="status-risco-lista">${indLista}</span> <span>${cidade.nome}</span>`;
+                li.onclick = () => {
+                    gerarVetorOperacional(lat, lon, marcador, classeRisco, cidade);
+                };
+                listaUl.appendChild(li);
+            });
+
+            document.getElementById('tot-cidades').innerText = tCidades;
+            document.getElementById('tot-efetivo').innerText = tEfetivo;
+            document.getElementById('tot-abts').innerText = tAbts;
+            document.getElementById('tot-urs').innerText = tUrs;
+        } else {
+            listaUl.innerHTML = "<li style='color:red; padding:20px;'>Arquivo dados.js não foi encontrado ou está vazio.</li>";
+        }
+
+        // Força renderização imediata do Leaflet na inicialização
+        setTimeout(() => { mapa.invalidateSize(); }, 250);
+        window.addEventListener('resize', () => { mapa.invalidateSize(); });
     </script>
 </body>
 </html>
