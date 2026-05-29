@@ -131,7 +131,7 @@
                 <div class="scip-linha"><span>Área Montada Estrutural:</span> <span>11.573,20 m²</span></div>
                 <div class="scip-linha"><span>Área Total do Evento:</span> <span>21.052 m²</span></div>
                 
-                <div class="scip-secao-titulo">Responsabilidade Técnico</div>
+                <div class="scip-secao-titulo">Responsabilidade Técnica</div>
                 <div class="scip-linha"><span>Engenheira Resp.:</span> <span style="color: #fff; font-size: 11px;">Daniela Brandão Siqueira</span></div>
                 
                 <div class="scip-secao-titulo">Rotas de Fuga do Público</div>
@@ -155,20 +155,16 @@
     <script>
         const LAT_QUARTEL = -10.9126, LON_QUARTEL = -37.0543; 
 
-        // Instanciação das duas referências globais de mapa
         let mapaEstado = null;
         let mapaPlanta = null;
         
-        // Elementos de desenho ativos por mapa
         let rotaEstadoLinha = null, vtrEstadoMarcador = null, timerEstado = null;
         let rotaPlantaLinha = null, vtrPlantaMarcador = null, timerPlanta = null;
 
-        // Configuração da dimensão em pixels da planta
         const hImagem = 1200;
         const wImagem = 1800;
         const limitesPlanta = [[0, 0], [hImagem, wImagem]];
 
-        // Pontos de interesse na planta (Eixo Y, Eixo X)
         const locaisPlantaSCIP = [
             { nome: "Entrada Principal do Complexo / Bilheteria", coord: [540, 1620], cor: "#00b0ff" },
             { nome: "Vila do Forró - Setor Aberto", coord: [750, 1330], cor: "#ff9100" },
@@ -184,17 +180,14 @@
             geral: [[540, 1620], [750, 1330], [380, 1160], [380, 810], [540, 650], [540, 140]]
         };
 
-        // 1. INICIALIZAÇÃO FIXA DO MAPA DO ESTADO (RODADO APENAS NO ONLOAD)
         function inicializarMapaEstado() {
             mapaEstado = L.map('mapa-estado', { zoomControl: false }).setView([-10.7, -37.4], 8);
             L.control.zoom({ position: 'topright' }).addTo(mapaEstado);
             
             L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(mapaEstado);
 
-            // QCG Siriri
             L.marker([LAT_QUARTEL, LON_QUARTEL]).addTo(mapaEstado).bindPopup("<b>Quartel Geral - CBMSE</b><br>Rua Siriri, 805");
 
-            // Popula os marcadores das cidades vindos do dados.js
             if (typeof PLANILHA_MANUAL !== 'undefined' && Array.isArray(PLANILHA_MANUAL)) {
                 PLANILHA_MANUAL.forEach(cidade => {
                     if (!cidade.lat || !cidade.lon) return;
@@ -204,7 +197,7 @@
                     else if (cidade.risco === 'Médio') classeRisco = 'risco-medio';
                     else if (cidade.risco === 'Baixo') classeRisco = 'risco-baixo';
 
-                    const m = L.marker([cidade.lat, cityLon = cidade.lon], {
+                    const m = L.marker([cidade.lat, cidade.lon], {
                         icon: L.divIcon({ html: '🚒', className: `marcador-bombeiro ${classeRisco}`, iconSize: [30, 30] })
                     }).addTo(mapaEstado).bindPopup(gerarHTMLPopup(cidade));
 
@@ -215,7 +208,6 @@
             }
         }
 
-        // 2. INICIALIZAÇÃO FIXA DO MAPA DA PLANTA (RODADO APENAS NO ONLOAD)
         function inicializarMapaPlanta() {
             mapaPlanta = L.map('mapa-planta', {
                 zoomControl: false,
@@ -229,7 +221,6 @@
             L.imageOverlay('PLANTA_SCIP_page-0001.jpg', limitesPlanta).addTo(mapaPlanta);
             mapaPlanta.fitBounds(limitesPlanta);
 
-            // Insere os pinos estáticos de segurança
             locaisPlantaSCIP.forEach(p => {
                 L.circleMarker(p.coord, {
                     radius: 10, fillColor: p.cor, color: '#ffffff', weight: 2.5, fillOpacity: 0.95
@@ -237,7 +228,6 @@
             });
         }
 
-        // ALTERNADOR DE VISIBILIDADE (CRIADO VIA CSS DISPLAY - 100% SEGURO)
         function mudarModo(modo) {
             if (modo === 'estado') {
                 document.getElementById('btn-estado').className = 'btn-modo ativo';
@@ -262,7 +252,6 @@
             }
         }
 
-        // MOTOR DE POPUPS ESTADUAIS
         function gerarHTMLPopup(cidade) {
             return `<div class="info-popup">
                         <h3>${cidade.nome}</h3>
@@ -275,7 +264,6 @@
                     </div>`;
         }
 
-        // LOGÍSTICA DE ROTAS RODOVIÁRIAS (MAPA ESTADUAL) - CORRIGIDA PARA VELOCIDADE CONSTANTE UNIFORME
         function gerarRotaEstadual(lat, lon, classeRisco, cityDados) {
             if (rotaEstadoLinha) mapaEstado.removeLayer(rotaEstadoLinha);
             if (vtrEstadoMarcador) mapaEstado.removeLayer(vtrEstadoMarcador);
@@ -293,7 +281,6 @@
                 const icone = L.divIcon({ html: '🚒', className: `marcador-bombeiro ${classeRisco}`, iconSize: [34, 34], iconAnchor: [17, 17] });
                 vtrEstadoMarcador = L.marker(coords[0], { icon: icone }).addTo(mapaEstado);
                 
-                // AJUSTE CRÍTICO: Pula pontos dependendo do tamanho da rota para manter velocidade uniforme e super rápida
                 let taxaSalto = 1;
                 if (coords.length > 300) taxaSalto = 8;
                 else if (coords.length > 150) taxaSalto = 4;
@@ -301,20 +288,23 @@
 
                 let step = 0;
                 timerEstado = setInterval(() => {
-                    if (step >= coords.length) {
+                    // Verificação robusta de ponto final ou extrapolação do salto
+                    if (step >= coords.length - 1) {
                         clearInterval(timerEstado);
-                        // Garante o posicionamento perfeito no ponto final da cidade
                         vtrEstadoMarcador.setLatLng(coords[coords.length - 1]);
-                        if (cityDados) vtrEstadoMarcador.bindPopup(gerarHTMLPopup(cityDados)).openPopup();
+                        if (cityDados) {
+                            // Cria e abre o balão informativo imediatamente
+                            vtrEstadoMarcador.bindPopup(gerarHTMLPopup(cityDados)).openPopup();
+                        }
                     } else {
                         vtrEstadoMarcador.setLatLng(coords[step]);
-                        step += taxaSalto; // Salta coordenadas para voar na pista
+                        step += taxaSalto;
+                        if (step >= coords.length) step = coords.length - 1;
                     }
-                }, 15); // Intervalo reduzido para 15ms
+                }, 15);
             });
         }
 
-        // LOGÍSTICA DE FLUXO INTERNO (MAPA DA PLANTA) - VERSÃO ULTRA RÁPIDA
         function simularRotaPlanta(tipo) {
             if (rotaPlantaLinha) mapaPlanta.removeLayer(rotaPlantaLinha);
             if (vtrPlantaMarcador) mapaPlanta.removeLayer(vtrPlantaMarcador);
@@ -323,7 +313,6 @@
             const pontos = caminhosFugaPlanta[tipo];
             rotaPlantaLinha = L.polyline(pontos, {color: '#ff1744', weight: 5, dashArray: '10, 15'}).addTo(mapaPlanta);
             
-            // Reduzido para apenas 10 passos intermediários para o carrinho correr
             let passosSuaves = [];
             for (let i = 0; i < pontos.length - 1; i++) {
                 let p1 = pontos[i], p2 = pontos[i+1];
@@ -342,10 +331,9 @@
                 } else {
                     vtrPlantaMarcador.setLatLng(passosSuaves[frame++]);
                 }
-            }, 10); // Atualização veloz a cada 10ms
+            }, 10);
         }
 
-        // ALIMENTAÇÃO CONSECUTIVA DA SIDEBAR LATERAL
         function construirListagemEsquerda() {
             let tCidades = 0, tEfetivo = 0, tAbts = 0, tUrs = 0;
             const listaUl = document.getElementById('lista-cidades');
@@ -369,7 +357,8 @@
                     li.innerHTML = `<span class="status-prefixo">${ind}</span> ${cidade.nome}`;
                     li.onclick = () => { 
                         mudarModo('estado');
-                        gerarRotaEstadual(cidade.lat, cidade.lon, classeRisco, cityDados = cidade); 
+                        // Corrigido enviando diretamente o objeto "cidade" de forma limpa e sem atribuições
+                        gerarRotaEstadual(cidade.lat, cidade.lon, classeRisco, cidade); 
                     };
                     listaUl.appendChild(li);
                 });
@@ -381,7 +370,6 @@
             }
         }
 
-        // CARREGAMENTO INICIAL
         window.onload = () => {
             inicializarMapaEstado();
             inicializarMapaPlanta();
