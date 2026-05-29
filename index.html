@@ -8,17 +8,17 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
 
     <style>
-        /* ESTILOS PARA COMPUTADOR (DESKTOP) */
-        body { margin: 0; padding: 0; display: flex; height: 100vh; font-family: Arial, sans-serif; background-color: #f4f4f9; overflow: hidden; }
+        /* ========================================== */
+        /* ESTILOS GERAIS (Comuns para ambos)          */
+        /* ========================================== */
+        body { margin: 0; padding: 0; display: flex; font-family: Arial, sans-serif; background-color: #f4f4f9; overflow: hidden; height: 100vh; }
         
         #menu-lateral { 
-            width: 320px; 
             background-color: #ffffff; 
             box-shadow: 2px 0 5px rgba(0,0,0,0.1); 
             z-index: 1000; 
             display: flex; 
             flex-direction: column;
-            transition: transform 0.3s ease, width 0.3s ease, margin-right 0.3s ease;
             overflow: hidden;
         }
         
@@ -33,12 +33,6 @@
             user-select: none;
             white-space: nowrap;
         }
-
-        /* Fechamento no Computador: desliza para a esquerda deixando uma aba de 45px */
-        #menu-lateral.recolhido { 
-            transform: translateX(-275px);
-            margin-right: -275px;
-        }
         
         ul#lista-cidades { list-style-type: none; padding: 0; margin: 0; overflow-y: auto; flex-grow: 1; -webkit-overflow-scrolling: touch; }
         ul#lista-cidades li { padding: 15px 20px; border-bottom: 1px solid #eeeeee; cursor: pointer; transition: background-color 0.2s; display: flex; align-items: center; font-weight: bold; color: #333; }
@@ -48,7 +42,7 @@
         
         #mapa { flex-grow: 1; height: 100%; width: 100%; }
         
-        /* ESTILIZAÇÃO DOS MARCADORES TÁTICOS */
+        /* MARCADORES TÁTICOS DO MAPA */
         .marcador-bombeiro {
             font-size: 18px;
             text-align: center;
@@ -71,45 +65,49 @@
         .info-popup h3 { margin: 0 0 10px 0; color: #d32f2f; font-size: 18px; border-bottom: 2px solid #d32f2f; padding-bottom: 5px; }
         .info-popup h4 { margin: 12px 0 5px 0; color: #444; background-color: #f5f5f5; padding: 3px; border-radius: 3px; }
         .info-popup p { margin: 3px 0; line-height: 1.4; }
-        
-        /* COMPORTAMENTO EXCLUSIVO PARA CELULAR (MOBILE) */
+
+        /* ========================================== */
+        /* REGRAS EXCLUSIVAS PARA COMPUTADOR (DESKTOP)*/
+        /* ========================================== */
+        @media (min-width: 769px) {
+            body { flex-direction: row; }
+            #menu-lateral { 
+                width: 320px; 
+                height: 100%; 
+                transition: transform 0.3s ease, margin-right 0.3s ease; 
+            }
+            /* Esconde para a esquerda deixando só uma bordinha clicável */
+            #menu-lateral.recolhido { 
+                transform: translateX(-275px); 
+                margin-right: -275px; 
+            }
+        }
+
+        /* ========================================== */
+        /* REGRAS EXCLUSIVAS PARA CELULAR (MOBILE)    */
+        /* ========================================== */
         @media (max-width: 768px) {
-            body { flex-direction: column; } /* Inverte: Menu vai para o TOPO, Mapa para baixo */
+            body { flex-direction: column; } /* Menu no topo, mapa embaixo */
             
             #menu-lateral { 
                 width: 100%; 
                 height: 40vh; 
-                transform: none !important; /* Anula o efeito de deslizar para a esquerda do desktop */
-                margin-right: 0 !important;
-                transition: height 0.3s ease;
+                transition: height 0.3s ease; 
             }
             
-            /* Fechamento no Mobile: Encolhe verticalmente para cima de forma limpa */
+            /* Encolhe para cima deixando a barra vermelha 100% visível e usável */
             #menu-lateral.recolhido { 
-                height: 46px !important; 
+                height: 48px !important; 
             }
             
-            #menu-lateral.recolhido ul#lista-cidades {
-                display: none; /* Esconde a lista para não vazar no mapa */
+            #menu-lateral.recolhido ul#lista-cidades { 
+                display: none !important; 
             }
             
-            #menu-lateral h2 { 
-                font-size: 1rem; 
-                padding: 12px 15px; 
-            }
+            #menu-lateral h2 { font-size: 1rem; padding: 12px 15px; }
+            #menu-lateral h2::after { content: ' ↕'; font-size: 0.8rem; opacity: 0.8; }
             
-            #menu-lateral h2::after {
-                content: ' ↕';
-                font-size: 0.8rem;
-                opacity: 0.8;
-            }
-            
-            #mapa { 
-                flex-grow: 1; 
-                height: auto; 
-                width: 100%; 
-            }
-            
+            #mapa { flex-grow: 1; height: auto; width: 100%; }
             ul#lista-cidades li { padding: 12px 15px; }
             .info-popup { min-width: 200px; max-width: 240px; }
         }
@@ -145,7 +143,7 @@
         const listaCidadesElemento = document.getElementById('lista-cidades');
         const menuLateral = document.getElementById('menu-lateral');
 
-        // CLIQUE NO TÍTULO VERMELHO (Funciona perfeitamente em ambos os ambientes)
+        // CLIQUE MANUAL NA BARRA VERMELHA (Abre/Fecha perfeito em ambos)
         document.querySelector('#menu-lateral h2').onclick = () => {
             menuLateral.classList.toggle('recolhido');
             setTimeout(() => { mapa.invalidateSize(); }, 320);
@@ -279,7 +277,7 @@
                 itemLista.onclick = () => {
                     gerarVetorOperacional(latCidade, lonCidade, marcador, classeRisco);
                     
-                    // FECHAMENTO AUTOMÁTICO NO MOBILE
+                    // FECHAMENTO AUTOMÁTICO NO MOBILE (Recolhe para cima)
                     if (window.innerWidth <= 768) {
                         menuLateral.classList.add('recolhido');
                         setTimeout(() => { mapa.invalidateSize(); }, 320);
