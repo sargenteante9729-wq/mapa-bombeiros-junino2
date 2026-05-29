@@ -248,7 +248,6 @@
                 document.getElementById('mapa-estado').style.display = 'block';
                 document.getElementById('mapa-planta').style.display = 'none';
                 
-                // Recalcula o tamanho para evitar renderização cinza parcial
                 setTimeout(() => mapaEstado.invalidateSize(), 50);
             } else {
                 document.getElementById('btn-estado').className = 'btn-modo';
@@ -278,7 +277,6 @@
 
         // LOGÍSTICA DE ROTAS RODOVIÁRIAS (MAPA ESTADUAL)
         function gerarRotaEstadual(lat, lon, classeRisco, cityDados) {
-            // Limpa gráficos antigos do mapa estadual antes de desenhar
             if (rotaEstadoLinha) mapaEstado.removeLayer(rotaEstadoLinha);
             if (vtrEstadoMarcador) mapaEstado.removeLayer(vtrEstadoMarcador);
             if (timerEstado) clearInterval(timerEstado);
@@ -292,7 +290,6 @@
                 rotaEstadoLinha = L.polyline(coords, {color: '#d32f2f', weight: 4}).addTo(mapaEstado);
                 mapaEstado.fitBounds(rotaEstadoLinha.getBounds(), {padding: [40, 40]});
                 
-                // Animação rodoviária
                 const icone = L.divIcon({ html: '🚒', className: `marcador-bombeiro ${classeRisco}`, iconSize: [34, 34], iconAnchor: [17, 17] });
                 vtrEstadoMarcador = L.marker(coords[0], { icon: icone }).addTo(mapaEstado);
                 
@@ -308,23 +305,21 @@
             });
         }
 
-        // LOGÍSTICA DE FLUXO INTERNO (MAPA DA PLANTA)
+        // LOGÍSTICA DE FLUXO INTERNO (MAPA DA PLANTA) - VERSÃO ULTRA RÁPIDA
         function simularRotaPlanta(tipo) {
-            // Limpa gráficos antigos do mapa da planta antes de desenhar
             if (rotaPlantaLinha) mapaPlanta.removeLayer(rotaPlantaLinha);
             if (vtrPlantaMarcador) mapaPlanta.removeLayer(vtrPlantaMarcador);
             if (timerPlanta) clearInterval(timerPlanta);
 
             const pontos = caminhosFugaPlanta[tipo];
-            
             rotaPlantaLinha = L.polyline(pontos, {color: '#ff1744', weight: 5, dashArray: '10, 15'}).addTo(mapaPlanta);
             
-            // Suavização vetorial (interpolação de passos) para andar na imagem plana
+            // Reduzido para apenas 10 passos intermediários para o carrinho correr
             let passosSuaves = [];
             for (let i = 0; i < pontos.length - 1; i++) {
                 let p1 = pontos[i], p2 = pontos[i+1];
-                for (let j = 0; j <= 40; j++) {
-                    passosSuaves.push([p1[0] + (p2[0] - p1[0]) * (j / 40), p1[1] + (p2[1] - p1[1]) * (j / 40)]);
+                for (let j = 0; j <= 10; j++) {
+                    passosSuaves.push([p1[0] + (p2[0] - p1[0]) * (j / 10), p1[1] + (p2[1] - p1[1]) * (j / 10)]);
                 }
             }
 
@@ -338,7 +333,7 @@
                 } else {
                     vtrPlantaMarcador.setLatLng(passosSuaves[frame++]);
                 }
-            }, 20);
+            }, 10); // Atualização veloz a cada 10ms
         }
 
         // ALIMENTAÇÃO CONSECUTIVA DA SIDEBAR LATERAL
@@ -365,7 +360,7 @@
                     li.innerHTML = `<span class="status-prefixo">${ind}</span> ${cidade.nome}`;
                     li.onclick = () => { 
                         mudarModo('estado');
-                        gerarRotaEstadual(cidade.lat, cidade.lon, classeRisco, cidade); 
+                        gerarRotaEstadual(cidade.lat, cidade.lon, classeRisco, cityDados = cidade); 
                     };
                     listaUl.appendChild(li);
                 });
@@ -377,7 +372,7 @@
             }
         }
 
-        // DISPARO ASSÍNCRONO CONTEXTUAL ÚNICO NO CARREGAMENTO
+        // CARREGAMENTO INICIAL
         window.onload = () => {
             inicializarMapaEstado();
             inicializarMapaPlanta();
