@@ -179,21 +179,19 @@
         const wImagem = 1800;
         const limitesPlanta = [[0, 0], [hImagem, wImagem]];
 
-        // POSIÇÕES CALIBRADAS E ADIÇÃO DA ÁREA RESERVADA PARA VTR OPERACIONAL (CARRINHO FIXO)
         const locaisPlantaSCIP = [
-            { nome: "Entrada Principal do Complexo / Bilheteria", coord: [350, 1650], cor: "#00b0ff", tipo: "ponto" },
-            { nome: "Área Reservada - Estacionamento de Viaturas Operacionais", coord: [250, 1500], cor: "#d32f2f", tipo: "vtr_fixa" },
-            { nome: "Vila do Forró - Setor Comercial e Recreativo", coord: [720, 1250], cor: "#ff9100", tipo: "ponto" },
-            { nome: "Saída de Emergência 04 - Praça de Alimentação", coord: [320, 1100], cor: "#00e676", tipo: "ponto" },
-            { nome: "Saída de Emergência 03 - Setor Bares", coord: [320, 750], cor: "#00e676", tipo: "ponto" },
-            { nome: "Ambiente Fechado (Arena Principal de Shows)", coord: [650, 600], cor: "#ff9100", tipo: "ponto" },
-            { nome: "Saída de Emergência 01 e 02 - Setor Frontal / Descompressão", coord: [580, 150], cor: "#00e676", tipo: "ponto" }
+            { nome: "Entrada Principal do Complexo / Bilheteria", coord: [540, 1620], cor: "#00b0ff" },
+            { nome: "Vila do Forró - Setor Aberto", coord: [750, 1330], cor: "#ff9100" },
+            { nome: "Saída de Emergência 04 - Praça de Alimentação", coord: [380, 1160], cor: "#00e676" },
+            { nome: "Saída de Emergência 03 - Setor Bares", coord: [380, 810], cor: "#00e676" },
+            { nome: "Ambiente Fechado (Arena de Shows)", coord: [540, 650], cor: "#ff9100" },
+            { nome: "Saída de Emergência 01 e 02 - Setor Arena / Motocross", coord: [540, 140], cor: "#00e676" }
         ];
 
         const caminhosFugaPlanta = {
-            arena: [[650, 600], [320, 750], [580, 150]],
-            vila: [[720, 1250], [350, 1650], [320, 1100]],
-            geral: [[250, 1500], [350, 1650], [720, 1250], [320, 1100], [320, 750], [650, 600], [580, 150]]
+            arena: [[540, 650], [380, 810], [540, 140]],
+            vila: [[750, 1330], [540, 1620], [380, 1160]],
+            geral: [[540, 1620], [750, 1330], [380, 1160], [380, 810], [540, 650], [540, 140]]
         };
 
         function inicializarMapaEstado() {
@@ -242,20 +240,9 @@
             mapaPlanta.fitBounds(limitesPlanta);
 
             locaisPlantaSCIP.forEach(p => {
-                if (p.tipo === "vtr_fixa") {
-                    L.marker(p.coord, {
-                        icon: L.divIcon({ 
-                            html: '🚒', 
-                            className: 'marcador-bombeiro risco-alto', 
-                            iconSize: [32, 32],
-                            iconAnchor: [16, 16]
-                        })
-                    }).addTo(mapaPlanta).bindPopup(`<b>${p.nome}</b>`);
-                } else {
-                    L.circleMarker(p.coord, {
-                        radius: 9, fillColor: p.cor, color: '#ffffff', weight: 2, fillOpacity: 0.95
-                    }).addTo(mapaPlanta).bindPopup(`<b>${p.nome}</b>`);
-                }
+                L.circleMarker(p.coord, {
+                    radius: 10, fillColor: p.cor, color: '#ffffff', weight: 2.5, fillOpacity: 0.95
+                }).addTo(mapaPlanta).bindPopup(`<b>${p.nome}</b>`);
             });
         }
 
@@ -283,6 +270,7 @@
             }
         }
 
+        /* FUNÇÃO ATUALIZADA PARA INCLUIR DADOS DINÂMICOS DE TEMPO E DISTÂNCIA */
         function gerarHTMLPopup(cidade, distTexto = '', tempoTexto = '') {
             let principal = cidade.eventos_principais || cidade.evento_principal || cidade.eventosPrincipais || cidade.principais || '-';
             let complementar = cidade.eventos_complementares || cidade.evento_complementar || cidade.eventosComplementares || cidade.complementares || '-';
@@ -322,6 +310,7 @@
             fetch(url).then(r => r.json()).then(data => {
                 if(!data.routes || data.routes.length === 0) return;
                 
+                // Extrai dados reais de distância (metros -> km) e tempo (segundos -> minutos)
                 const realMetros = data.routes[0].distance;
                 const realSegundos = data.routes[0].duration;
                 
@@ -335,6 +324,7 @@
                     tempoTexto = hrs + 'h ' + mins + 'min';
                 }
 
+                // Alimenta o Painel do Menu Lateral
                 document.getElementById('tel-nome').innerText = cityDados.nome;
                 document.getElementById('tel-distancia').innerText = kmCalculado;
                 document.getElementById('tel-tempo').innerText = tempoTexto;
@@ -361,6 +351,7 @@
                         clearInterval(timerEstado);
                         vtrEstadoMarcador.setLatLng(coords[coords.length - 1]);
                         if (cityDados) {
+                            // Abre o popup contendo a distância e tempo reais calculados
                             vtrEstadoMarcador.bindPopup(gerarHTMLPopup(cityDados, kmCalculado, tempoTexto)).openPopup();
                         }
                     } else {
