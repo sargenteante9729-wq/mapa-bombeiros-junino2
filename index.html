@@ -74,7 +74,7 @@
         }
 
         /* ========================================== */
-        /* CARD DE LEGENDA INTERATIVO (BASE)          */
+        /* CARD DE LEGENDA INTERATIVO                 */
         /* ========================================== */
         .legenda-container {
             background: white;
@@ -127,7 +127,7 @@
         .lc-padrao { border: 2px solid #9e9e9e; background-color: #f5f5f5; }
 
         /* ========================================== */
-        /* CONFIGURAÇÕES PARA COMPUTADOR              */
+        /* LAYOUT RESPONSIVO (COMPUTADOR / CELULAR)   */
         /* ========================================== */
         @media (min-width: 769px) {
             body { flex-direction: row; }
@@ -135,9 +135,6 @@
             #menu-lateral.recolhido { transform: translateX(-275px); margin-right: -275px; }
         }
 
-        /* ========================================== */
-        /* CORREÇÕES EXCLUSIVAS PARA CELULAR (MOBILE) */
-        /* ========================================== */
         @media (max-width: 768px) {
             body { flex-direction: column; }
             #menu-lateral { width: 100%; height: 40vh; transition: height 0.3s ease; }
@@ -149,22 +146,12 @@
             ul#lista-cidades li { padding: 12px 15px; }
             .info-popup { min-width: 200px; max-width: 240px; }
             
-            /* Ajustes cruciais para o cartão não cortar no mobile */
-            .legenda-container { 
-                padding: 6px 10px; 
-                font-size: 11px; 
-                max-width: 130px; /* Impede o card de estourar horizontalmente */
-            }
+            .legenda-container { padding: 6px 10px; font-size: 11px; max-width: 130px; }
             .legenda-linha { margin-bottom: 4px; }
             .legenda-titulo { margin-bottom: 5px; }
 
-            /* Força os blocos de controle do Leaflet a subirem no celular */
-            .leaflet-left {
-                margin-left: 10px !important;
-            }
-            .leaflet-bottom {
-                margin-bottom: 25px !important; /* Levanta o card para escapar da barra nativa do celular */
-            }
+            .leaflet-left { margin-left: 10px !important; }
+            .leaflet-bottom { margin-bottom: 25px !important; }
         }
     </style>
 </head>
@@ -180,10 +167,11 @@
     <script src="dados.js"></script>
 
     <script>
+        // Inicialização básica do mapa centralizado em Sergipe
         const mapa = L.map('mapa', { zoomControl: false }).setView([-10.7, -37.4], 8);
         L.control.zoom({ position: 'topright' }).addTo(mapa);
         
-        // Camadas de fundo
+        // Camadas de mapa de fundo
         const mapaPadrao = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '© OpenStreetMap © CartoDB' });
         const mapaSatelite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles &copy; Esri' });
         const mapaEscuro = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '© OpenStreetMap © CartoDB' });
@@ -191,9 +179,8 @@
         mapaPadrao.addTo(mapa);
         L.control.layers({ "🗺️ Mapa Claro": mapaPadrao, "🛰️ Visão de Satélite": mapaSatelite, "🌑 Modo Noturno": mapaEscuro }, null, { position: 'topright' }).addTo(mapa);
         
-        // Inicialização da legenda
+        // Inicialização do painel flutuante da legenda
         const legenda = L.control({ position: 'bottomleft' });
-
         legenda.onAdd = function () {
             const div = L.DomUtil.create('div', 'legenda-container');
             div.id = 'legenda-painel';
@@ -206,7 +193,6 @@
             `;
             return div;
         };
-
         legenda.addTo(mapa);
 
         function atualizarCorDaLegenda(classeRisco) {
@@ -217,16 +203,10 @@
             const lPadrao = document.getElementById('leg-padrao');
 
             if (!painel) return;
-
             painel.classList.remove('legenda-alto', 'legenda-medio', 'legenda-baixo', 'legenda-padrao');
 
             const todasLinhas = [lAlto, lMedio, lBaixo, lPadrao];
-            todasLinhas.forEach(linha => {
-                if (linha) {
-                    linha.style.opacity = '0.3';
-                    linha.style.transform = 'scale(1)';
-                }
-            });
+            todasLinhas.forEach(linha => { if (linha) { linha.style.opacity = '0.3'; linha.style.transform = 'scale(1)'; } });
 
             if (classeRisco === 'risco-alto') {
                 painel.classList.add('legenda-alto');
@@ -245,10 +225,7 @@
 
         const LAT_ARACAJU = -10.9472;
         const LON_ARACAJU = -37.0731;
-        
-        let linhaVetor;
-        let carrinhoAnimado;
-        let timerAnimacao;
+        let linhaVetor, carrinhoAnimado, timerAnimacao;
 
         const listaCidadesElemento = document.getElementById('lista-cidades');
         const menuLateral = document.getElementById('menu-lateral');
@@ -260,7 +237,6 @@
 
         function gerarVetorOperacional(latDestino, lonDestino, marcadorDestino, classeRisco) {
             atualizarCorDaLegenda(classeRisco);
-
             if (linhaVetor) mapa.removeLayer(linhaVetor);
             if (timerAnimacao) clearInterval(timerAnimacao);
             if (carrinhoAnimado) mapa.removeLayer(carrinhoAnimado);
@@ -284,7 +260,6 @@
                     LON_ARACAJU + (lonDestino - LON_ARACAJU) * percentual
                 ]);
             }
-
             iniciarDeslocamento(coordenadasTrajeto, marcadorDestino, classeRisco);
         }
 
@@ -305,58 +280,104 @@
             }, 25); 
         }
 
-        function gerarHTMLPopup(linha) {
-            if (!linha.efetivo && !linha.abts) {
-                return `<div class="info-popup"><h3>${linha.nome}</h3><p>Informações operacionais em breve...</p></div>`;
+        // ========================================== //
+        // FILTRO DE SEGURANÇA CONTRA ERROS DE COLUNA  //
+        // ========================================== //
+        function obterCampoSeguro(objeto, chavesAceitas) {
+            for (let chave of chavesAceitas) {
+                if (objeto[chave] !== undefined && objeto[chave] !== null && objeto[chave] !== '') {
+                    return objeto[chave];
+                }
             }
-            let html = `<div class="info-popup"><h3>${linha.nome}</h3>`;
-            html += `<h4>Informações Gerais</h4>
-                     <p>🚒 ABTs: ${linha.abts || '-'}&nbsp;&nbsp;|&nbsp;&nbsp;🚑 UR: ${linha.ur || '-'}</p>
-                     <p>👨‍🚒 Efetivo: ${linha.efetivo || '-'}&nbsp;&nbsp;|&nbsp;&nbsp;⚠️ Risco: ${linha.risco || '-'}</p>
-                     <p>👨‍🚒 Coordenação: ${linha.coordenacao || '-'}</p>
-                     <p>👥 Público Estimado: ${linha.publico || '-'}</p>`;
+            return '';
+        }
 
-            if (linha.eventos_programados) html += `<h4>Eventos Programados</h4><p>${linha.eventos_programados.replace(/\n/g, '<br>')}</p>`;
+        function gerarHTMLPopup(cidade) {
+            let html = `<div class="info-popup"><h3>${cidade.nome}</h3>`;
+            html += `<h4>Informações Gerais</h4>
+                     <p>🚒 ABTs: ${cidade.abts || '-'}&nbsp;&nbsp;|&nbsp;&nbsp;🚑 UR: ${cidade.ur || '-'}</p>
+                     <p>👨‍🚒 Efetivo: ${cidade.efetivo || '-'}&nbsp;&nbsp;|&nbsp;&nbsp;⚠️ Risco: ${cidade.risco || '-'}</p>
+                     <p>👨‍🚒 Coordenação: ${cidade.coordenacao || '-'}</p>
+                     <p>👥 Público Estimado: ${cidade.publico || '-'}</p>`;
+
+            if (cidade.eventos_programados) {
+                const textoProg = String(cidade.eventos_programados).replace(/\n/g, '<br>');
+                html += `<h4>Eventos Programados</h4><p>${textoProg}</p>`;
+            }
+            
+            if (cidade.eventos_complementares) {
+                const textoComp = String(cidade.eventos_complementares).replace(/\n/g, '<br>');
+                html += `<h4>Eventos Complementares</h4><p>${textoComp}</p>`;
+            }
+
             html += `</div>`;
             return html;
         }
 
-        if (typeof PLANILHA_MANUAL !== 'undefined') {
-            PLANILHA_MANUAL.forEach(cidade => {
-                const latCidade = parseFloat(cidade.lat);
-                const lonCidade = parseFloat(cidade.lon);
-                const htmlDoBalao = gerarHTMLPopup(cidade);
+        // ========================================== //
+        // PROCESSAMENTO DE DADOS BLINDADO            //
+        // ========================================== //
+        if (typeof PLANILHA_MANUAL !== 'undefined' && Array.isArray(PLANILHA_MANUAL)) {
+            PLANILHA_MANUAL.forEach(itemRaw => {
+                try {
+                    // Tenta capturar as coordenadas de várias formas possíveis para evitar travamento
+                    const latRaw = obterCampoSeguro(itemRaw, ['lat', 'Latitude', 'Lat', 'LAT', 'latitude']);
+                    const lonRaw = obterCampoSeguro(itemRaw, ['lon', 'long', 'Longitude', 'Lon', 'Lng', 'LON', 'longitude']);
+                    
+                    const latCidade = parseFloat(latRaw);
+                    const lonCidade = parseFloat(lonRaw);
 
-                let classeRisco = 'risco-padrao';
-                let indicadorLista = '🚒'; 
+                    // Se a linha atual não tiver coordenadas válidas, ela é ignorada em vez de derrubar o mapa
+                    if (isNaN(latCidade) || isNaN(lonCidade)) return;
 
-                if (cidade.risco === 'Alto') { classeRisco = 'risco-alto'; indicadorLista = '🔴'; }
-                else if (cidade.risco === 'Médio') { classeRisco = 'risco-medio'; indicadorLista = '🟡'; }
-                else if (cidade.risco === 'Baixo') { classeRisco = 'risco-baixo'; indicadorLista = '🟢'; }
+                    // Estrutura um objeto limpo e padronizado
+                    const cidadePadronizada = {
+                        nome: obterCampoSeguro(itemRaw, ['nome', 'Nome', 'Município', 'Municipio', 'Cidade']) || 'Município sem nome',
+                        risco: obterCampoSeguro(itemRaw, ['risco', 'Risco', 'Nível de Risco', 'risco ']),
+                        abts: obterCampoSeguro(itemRaw, ['abts', 'ABTs', 'abt', 'ABT']),
+                        ur: obterCampoSeguro(itemRaw, ['ur', 'UR']),
+                        efetivo: obterCampoSeguro(itemRaw, ['efetivo', 'Efetivo']),
+                        coordenacao: obterCampoSeguro(itemRaw, ['coordenacao', 'Coordenação', 'coordenador', 'Coordenação / Comando']),
+                        publico: obterCampoSeguro(itemRaw, ['publico', 'Público', 'Público Estimado']),
+                        eventos_programados: obterCampoSeguro(itemRaw, ['eventos_programados', 'Eventos Programados - Festas e celebrações', 'Eventos Programados']),
+                        eventos_complementares: obterCampoSeguro(itemRaw, ['eventos_complementares', 'Eventos Complementares - Atividades extras', 'Eventos Complementares'])
+                    };
 
-                const iconeCustomizado = L.divIcon({ html: '🚒', className: `marcador-bombeiro ${classeRisco}`, iconSize: [36, 36], iconAnchor: [18, 18], popupAnchor: [0, -18] });
-                
-                const marcador = L.marker([latCidade, lonCidade], { icon: iconeCustomizado })
-                    .addTo(mapa)
-                    .bindPopup(htmlDoBalao);
+                    let classeRisco = 'risco-padrao';
+                    let indicadorLista = '🚒'; 
 
-                marcador.on('popupopen', () => {
-                    atualizarCorDaLegenda(classeRisco);
-                });
+                    if (cidadePadronizada.risco === 'Alto') { classeRisco = 'risco-alto'; indicadorLista = '🔴'; }
+                    else if (cidadePadronizada.risco === 'Médio') { classeRisco = 'risco-medio'; indicadorLista = '🟡'; }
+                    else if (cidadePadronizada.risco === 'Baixo') { classeRisco = 'risco-baixo'; indicadorLista = '🟢'; }
 
-                const itemLista = document.createElement('li');
-                itemLista.innerHTML = `<span class="status-risco-lista">${indicadorLista}</span> <span>${cidade.nome}</span>`;
-                
-                itemLista.onclick = () => {
-                    gerarVetorOperacional(latCidade, lonCidade, marcador, classeRisco);
-                    if (window.innerWidth <= 768) {
-                        menuLateral.classList.add('recolhido');
-                        setTimeout(() => { mapa.invalidateSize(); }, 320);
-                    }
-                };
+                    const htmlDoBalao = gerarHTMLPopup(cidadePadronizada);
+                    const iconeCustomizado = L.divIcon({ html: '🚒', className: `marcador-bombeiro ${classeRisco}`, iconSize: [36, 36], iconAnchor: [18, 18], popupAnchor: [0, -18] });
+                    
+                    const marcador = L.marker([latCidade, lonCidade], { icon: iconeCustomizado })
+                        .addTo(mapa)
+                        .bindPopup(htmlDoBalao);
 
-                listaCidadesElemento.appendChild(itemLista);
+                    marcador.on('popupopen', () => { atualizarCorDaLegenda(classeRisco); });
+
+                    // Criação do item na lista lateral
+                    const itemLista = document.createElement('li');
+                    itemLista.innerHTML = `<span class="status-risco-lista">${indicadorLista}</span> <span>${cidadePadronizada.nome}</span>`;
+                    
+                    itemLista.onclick = () => {
+                        gerarVetorOperacional(latCidade, lonCidade, marcador, classeRisco);
+                        if (window.innerWidth <= 768) {
+                            menuLateral.classList.add('recolhido');
+                            setTimeout(() => { mapa.invalidateSize(); }, 320);
+                        }
+                    };
+
+                    listaCidadesElemento.appendChild(itemLista);
+                } catch (erroInterno) {
+                    console.warn("Item ignorado devido a inconsistência nos dados de origem:", erroInterno);
+                }
             });
+        } else {
+            console.error("A variável 'PLANILHA_MANUAL' não foi detectada ou não está no formato correto de lista dentro do arquivo dados.js.");
         }
     </script>
 </body>
