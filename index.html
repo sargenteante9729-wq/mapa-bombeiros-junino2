@@ -77,11 +77,16 @@
             box-shadow: 0 2px 6px rgba(0,0,0,0.3);
             display: flex; align-items: center; justify-content: center;
         }
-        .risco-alto { border: 3px solid #d32f2f; }
-        .risco-medio { border: 3px solid #fbc02d; }
-        .risco-baixo { border: 3px solid #388e3c; }
-        .risco-padrao { border: 3px solid #9e9e9e; }
+        .risco-alto { border: 3px solid #d32f2f; background-color: #ffebee; }
+        .risco-medio { border: 3px solid #fbc02d; background-color: #fffde7; }
+        .risco-baixo { border: 3px solid #388e3c; background-color: #e8f5e9; }
+        .risco-padrao { border: 3px solid #9e9e9e; background-color: #f5f5f5; }
         
+        /* POPUPS */
+        .info-popup { min-width: 240px; font-size: 13px; color: #333; }
+        .info-popup h3 { margin: 0 0 8px 0; color: #d32f2f; font-size: 16px; border-bottom: 2px solid #d32f2f; padding-bottom: 4px; }
+        .info-popup p { margin: 4px 0; line-height: 1.4; }
+
         /* LEGENDA */
         .legenda-container {
             background: white; padding: 8px 12px; border-radius: 4px;
@@ -132,24 +137,24 @@
     <script>
         // CONFIGURAÇÕES BASE DE COORDENADAS
         const LAT_QUARTEL = -10.9126, LON_QUARTEL = -37.0543; // Quartel Siriri
-        const LAT_ARRAIA = -10.9852, LON_ARRAIA = -37.0515;   // Posição real do Arraiá do Povo na Orla
+        const LAT_ARRAIA = -10.9852, LON_ARRAIA = -37.0515;   // Posição real do Arraiá do Povo
 
         const mapa = L.map('mapa', { zoomControl: false }).setView([-10.7, -37.4], 8);
         L.control.zoom({ position: 'topright' }).addTo(mapa);
         
         const camadaMapa = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(mapa);
 
-        // Grupo de camadas para gerenciar o que sai e entra no mapa de forma limpa
+        // Grupos de camadas para alternar perfeitamente os contextos
         const camadaEstadual = L.layerGroup().addTo(mapa);
         const camadaPlantaSCIP = L.layerGroup();
 
-        // Marcador do Quartel Fixo
+        // Marcador fixo do Quartel de Origem
         L.marker([LAT_QUARTEL, LON_QUARTEL]).addTo(camadaEstadual)
             .bindPopup("<b>Quartel Geral - CBMSE</b><br>Rua Siriri, 805");
 
         let linhaTrajeto, carroAnimado, timerAnimacao;
 
-        // MUDANÇA DE MODO DE VISÃO (ESTADO vs PLANTA)
+        // CONTROLE DE FLUXO DE VISÕES
         function mudarModo(modo) {
             limparGraficos();
             if (modo === 'estado') {
@@ -170,8 +175,10 @@
                 
                 mapa.removeLayer(camadaEstadual);
                 mapa.addLayer(camadaPlantaSCIP);
-                mapa.setView([LAT_ARRAIA, LON_ARRAIA], 17); // Foco no Arraiá do Povo
-                camadaMapa.setUrl('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'); // Visual Noturno CAD
+                
+                // MUDANÇA IMPORTANTE: Zoom reduzido para 15 para dar uma perspectiva mais ampla da área costeira
+                mapa.setView([LAT_ARRAIA, LON_ARRAIA], 15); 
+                camadaMapa.setUrl('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png');
                 
                 construirEstruturasPlanta();
             }
@@ -183,8 +190,20 @@
             if (timerAnimacao) clearInterval(timerAnimacao);
         }
 
+        // ================= CONSTRUTOR DE POPUPS CORRIGIDO =================
+        function gerarHTMLPopup(cidade) {
+            return `<div class="info-popup">
+                        <h3>${cidade.nome}</h3>
+                        <p><strong>⚠️ Risco:</strong> ${cidade.risco || '-'}</p>
+                        <p><strong>👨‍🚒 Efetivo:</strong> ${cidade.efetivo || '-'}</p>
+                        <p><strong>🚒 ABTs:</strong> ${cidade.abts || '-'}</p>
+                        <p><strong>🚑 UR:</strong> ${cidade.ur || '-'}</p>
+                        <p><strong>👨‍🚒 Coordenação:</strong> ${cidade.coordenacao || '-'}</p>
+                    </div>`;
+        }
+
         // ================= INTERFACE ESTADUAL (ROTA RODOVIÁRIA) =================
-        function gerarRotaEstadual(lat, lon, classeRisco) {
+        function gerarRotaEstadual(lat, lon, classeRisco, cidadeDados) {
             limparGraficos();
             const url = `https://router.project-osrm.org/route/v1/driving/${LON_QUARTEL},${LAT_QUARTEL};${lon},${lat}?overview=full&geometries=geojson`;
 
@@ -193,13 +212,13 @@
                 const coords = data.routes[0].geometry.coordinates.map(p => [p[1], p[0]]);
                 
                 linhaTrajeto = L.polyline(coords, {color: '#d32f2f', weight: 4}).addTo(mapa);
-                mapa.fitBounds(linhaTrajeto.getBounds(), {padding: [30,30]});
+                mapa.fitBounds(linhaTrajeto.getBounds(), {padding: [40, 40]});
                 
-                animarDeslocamento(coords, classeRisco);
+                animarDeslocamento(coords, classeRisco, cidadeDados);
             });
         }
 
-        // ================= INTERFACE INTERNA (PLANTA SCIP) =================
+        // ================= INTERFACE INTERNA (PLANTA SCIP REAJUSTADA) =================
         const pontosPlanta = [
             { nome: "Posto Comando Central / Entrada", coord: [-10.9855, -37.0525], classe: "ponto-comando" },
             { nome: "Saída Emergência A - Arena Oeste", coord: [-10.9850, -37.0520], classe: "ponto-saida" },
@@ -217,7 +236,7 @@
             camadaPlantaSCIP.clearLayers();
             pontosPlanta.forEach(p => {
                 L.circleMarker(p.coord, {
-                    radius: 7, fillColor: p.classe === 'ponto-comando' ? '#2196f3' : '#4caf50',
+                    radius: 8, fillColor: p.classe === 'ponto-comando' ? '#2196f3' : '#4caf50',
                     color: '#fff', weight: 2, fillOpacity: 0.9
                 }).addTo(camadaPlantaSCIP).bindPopup(`<b>${p.nome}</b>`);
             });
@@ -228,11 +247,11 @@
             const pontos = rotasInternas[tipo];
             
             linhaTrajeto = L.polyline(pontos, {color: '#00e676', weight: 5, dashArray: '5, 10'}).addTo(mapa);
-            animarDeslocamento(pontos, 'risco-baixo');
+            animarDeslocamento(pontos, 'risco-baixo', null);
         }
 
         // ================= MOTOR DE ANIMAÇÃO COMPARTILHADO =================
-        function animarDeslocamento(pontos, classeRisco) {
+        function animarDeslocamento(pontos, classeRisco, cidadeDados) {
             const icone = L.divIcon({ html: '🚒', className: `marcador-bombeiro ${classeRisco}`, iconSize: [34, 34], iconAnchor: [17, 17] });
             carroAnimado = L.marker(pontos[0], { icon: icone }).addTo(mapa);
             
@@ -240,13 +259,16 @@
             timerAnimacao = setInterval(() => {
                 if (i >= pontos.length) {
                     clearInterval(timerAnimacao);
+                    if (cidadeDados) {
+                        carroAnimado.bindPopup(gerarHTMLPopup(cidadeDados)).openPopup();
+                    }
                 } else {
                     carroAnimado.setLatLng(pontos[i++]);
                 }
-            }, 40);
+            }, 35);
         }
 
-        // PARSER DE DADOS ESTADUAIS
+        // PARSER E MONITOR DE DADOS ESTADUAIS
         let tCidades = 0, tEfetivo = 0, tAbts = 0, tUrs = 0;
         const listaUl = document.getElementById('lista-cidades');
 
@@ -264,14 +286,20 @@
                 else if (cidade.risco === 'Médio') { classeRisco = 'risco-medio'; ind = '🟡'; }
                 else if (cidade.risco === 'Baixo') { classeRisco = 'risco-baixo'; ind = '🟢'; }
 
-                // Adiciona marcadores estáticos no mapa geral
-                L.marker([cidade.lat, city = cidade.lon], {
+                // Adiciona os marcadores fixos com o popup corrigido na camada geral do estado
+                const m = L.marker([cidade.lat, cidade.lon], {
                     icon: L.divIcon({ html: '🚒', className: `marcador-bombeiro ${classeRisco}`, iconSize: [30, 30] })
-                }).addTo(camadaEstadual).bindPopup(`<b>${cidade.nome}</b><br>Risco: ${cidade.risco}`);
+                }).addTo(camadaEstadual).bindPopup(gerarHTMLPopup(cidade));
+
+                m.on('click', () => {
+                    gerarRotaEstadual(cidade.lat, cidade.lon, classeRisco, cidade);
+                });
 
                 const li = document.createElement('li');
                 li.innerHTML = `<span class="status-prefixo">${ind}</span> ${cidade.nome}`;
-                li.onclick = () => { gerarRotaEstadual(cidade.lat, cidade.lon, classeRisco); };
+                li.onclick = () => { 
+                    gerarRotaEstadual(cidade.lat, cidade.lon, classeRisco, cidade); 
+                };
                 listaUl.appendChild(li);
             });
 
