@@ -66,6 +66,15 @@
         .info-popup h4 { margin: 12px 0 5px 0; color: #444; background-color: #f5f5f5; padding: 3px; border-radius: 3px; }
         .info-popup p { margin: 3px 0; line-height: 1.4; }
 
+        /* Customização discreta para o seletor de mapas do Leaflet */
+        .leaflet-control-layers {
+            border-radius: 8px !important;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2) !important;
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
         /* ========================================== */
         /* REGRAS EXCLUSIVAS PARA COMPUTADOR (DESKTOP)*/
         /* ========================================== */
@@ -76,7 +85,6 @@
                 height: 100%; 
                 transition: transform 0.3s ease, margin-right 0.3s ease; 
             }
-            /* Esconde para a esquerda deixando só uma bordinha clicável */
             #menu-lateral.recolhido { 
                 transform: translateX(-275px); 
                 margin-right: -275px; 
@@ -87,7 +95,7 @@
         /* REGRAS EXCLUSIVAS PARA CELULAR (MOBILE)    */
         /* ========================================== */
         @media (max-width: 768px) {
-            body { flex-direction: column; } /* Menu no topo, mapa embaixo */
+            body { flex-direction: column; }
             
             #menu-lateral { 
                 width: 100%; 
@@ -95,7 +103,6 @@
                 transition: height 0.3s ease; 
             }
             
-            /* Encolhe para cima deixando a barra vermelha 100% visível e usável */
             #menu-lateral.recolhido { 
                 height: 48px !important; 
             }
@@ -129,10 +136,39 @@
         const mapa = L.map('mapa', { zoomControl: false }).setView([-10.7, -37.4], 8);
         L.control.zoom({ position: 'topright' }).addTo(mapa);
         
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { 
+        // ==========================================
+        /* DEFINIÇÃO DAS CAMADAS DE FUNDO (BASEMAPS) */
+        // ==========================================
+        const mapaPadrao = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { 
             attribution: '© OpenStreetMap contributors © CartoDB' 
+        });
+
+        const mapaSatelite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+        });
+
+        const mapaEscuro = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { 
+            attribution: '© OpenStreetMap contributors © CartoDB' 
+        });
+
+        // Ativa o mapa claro como padrão inicial
+        mapaPadrao.addTo(mapa);
+
+        // Agrupa as camadas em um objeto de controle
+        const mapasDisponiveis = {
+            "🗺️ Mapa Claro": mapaPadrao,
+            "🛰️ Visão de Satélite": mapaSatelite,
+            "🌑 Modo Noturno": mapaEscuro
+        };
+
+        // Adiciona o botão flutuante de alternância no canto superior direito
+        L.control.layers(mapasDisponiveis, null, { 
+            collapsed: true, 
+            position: 'topright' 
         }).addTo(mapa);
         
+        // ==========================================
+
         const LAT_ARACAJU = -10.9472;
         const LON_ARACAJU = -37.0731;
         
@@ -143,7 +179,6 @@
         const listaCidadesElemento = document.getElementById('lista-cidades');
         const menuLateral = document.getElementById('menu-lateral');
 
-        // CLIQUE MANUAL NA BARRA VERMELHA (Abre/Fecha perfeito em ambos)
         document.querySelector('#menu-lateral h2').onclick = () => {
             menuLateral.classList.toggle('recolhido');
             setTimeout(() => { mapa.invalidateSize(); }, 320);
@@ -277,7 +312,6 @@
                 itemLista.onclick = () => {
                     gerarVetorOperacional(latCidade, lonCidade, marcador, classeRisco);
                     
-                    // FECHAMENTO AUTOMÁTICO NO MOBILE (Recolhe para cima)
                     if (window.innerWidth <= 768) {
                         menuLateral.classList.add('recolhido');
                         setTimeout(() => { mapa.invalidateSize(); }, 320);
