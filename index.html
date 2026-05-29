@@ -31,7 +31,7 @@
             text-align: center; 
             cursor: pointer; 
             user-select: none;
-            white-space: nowrap;
+            line-height: 1.4; /* Garante boa leitura se o título quebrar linha */
         }
         
         ul#lista-cidades { list-style-type: none; padding: 0; margin: 0; overflow-y: auto; flex-grow: 1; -webkit-overflow-scrolling: touch; }
@@ -137,7 +137,7 @@
 
         @media (max-width: 768px) {
             body { flex-direction: column; }
-            #menu-lateral { width: 100%; height: 40vh; transition: height 0.3s ease; }
+            #menu-lateral { width: 100%; height: auto; max-height: 40vh; transition: height 0.3s ease; }
             #menu-lateral.recolhido { height: 48px !important; }
             #menu-lateral.recolhido ul#lista-cidades { display: none !important; }
             #menu-lateral h2 { font-size: 1rem; padding: 12px 15px; }
@@ -167,11 +167,9 @@
     <script src="dados.js"></script>
 
     <script>
-        // Inicialização básica do mapa centralizado em Sergipe
         const mapa = L.map('mapa', { zoomControl: false }).setView([-10.7, -37.4], 8);
         L.control.zoom({ position: 'topright' }).addTo(mapa);
         
-        // Camadas de mapa de fundo
         const mapaPadrao = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '© OpenStreetMap © CartoDB' });
         const mapaSatelite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles &copy; Esri' });
         const mapaEscuro = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '© OpenStreetMap © CartoDB' });
@@ -179,7 +177,6 @@
         mapaPadrao.addTo(mapa);
         L.control.layers({ "🗺️ Mapa Claro": mapaPadrao, "🛰️ Visão de Satélite": mapaSatelite, "🌑 Modo Noturno": mapaEscuro }, null, { position: 'topright' }).addTo(mapa);
         
-        // Inicialização do painel flutuante da legenda
         const legenda = L.control({ position: 'bottomleft' });
         legenda.onAdd = function () {
             const div = L.DomUtil.create('div', 'legenda-container');
@@ -280,9 +277,6 @@
             }, 25); 
         }
 
-        // ========================================== //
-        // FILTRO DE SEGURANÇA CONTRA ERROS DE COLUNA  //
-        // ========================================== //
         function obterCampoSeguro(objeto, chavesAceitas) {
             for (let chave of chavesAceitas) {
                 if (objeto[chave] !== undefined && objeto[chave] !== null && objeto[chave] !== '') {
@@ -314,23 +308,17 @@
             return html;
         }
 
-        // ========================================== //
-        // PROCESSAMENTO DE DADOS BLINDADO            //
-        // ========================================== //
         if (typeof PLANILHA_MANUAL !== 'undefined' && Array.isArray(PLANILHA_MANUAL)) {
             PLANILHA_MANUAL.forEach(itemRaw => {
                 try {
-                    // Tenta capturar as coordenadas de várias formas possíveis para evitar travamento
                     const latRaw = obterCampoSeguro(itemRaw, ['lat', 'Latitude', 'Lat', 'LAT', 'latitude']);
                     const lonRaw = obterCampoSeguro(itemRaw, ['lon', 'long', 'Longitude', 'Lon', 'Lng', 'LON', 'longitude']);
                     
                     const latCidade = parseFloat(latRaw);
                     const lonCidade = parseFloat(lonRaw);
 
-                    // Se a linha atual não tiver coordenadas válidas, ela é ignorada em vez de derrubar o mapa
                     if (isNaN(latCidade) || isNaN(lonCidade)) return;
 
-                    // Estrutura um objeto limpo e padronizado
                     const cidadePadronizada = {
                         nome: obterCampoSeguro(itemRaw, ['nome', 'Nome', 'Município', 'Municipio', 'Cidade']) || 'Município sem nome',
                         risco: obterCampoSeguro(itemRaw, ['risco', 'Risco', 'Nível de Risco', 'risco ']),
@@ -359,7 +347,6 @@
 
                     marcador.on('popupopen', () => { atualizarCorDaLegenda(classeRisco); });
 
-                    // Criação do item na lista lateral
                     const itemLista = document.createElement('li');
                     itemLista.innerHTML = `<span class="status-risco-lista">${indicadorLista}</span> <span>${cidadePadronizada.nome}</span>`;
                     
@@ -377,7 +364,7 @@
                 }
             });
         } else {
-            console.error("A variável 'PLANILHA_MANUAL' não foi detectada ou não está no formato correto de lista dentro do arquivo dados.js.");
+            console.error("A variável 'PLANILHA_MANUAL' não foi detectada no arquivo dados.js.");
         }
     </script>
 </body>
