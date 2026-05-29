@@ -20,7 +20,7 @@
         body { display: flex; }
         
         #menu-lateral { 
-            width: 340px; height: 100vh; background: #ffffff; 
+            width: 350px; height: 100vh; background: #ffffff; 
             display: flex; flex-direction: column; z-index: 1000;
             box-shadow: 2px 0 8px rgba(0,0,0,0.15); flex-shrink: 0;
         }
@@ -69,31 +69,36 @@
         
         #mapa { flex-grow: 1; height: 100vh !important; position: relative; background: #e5e9f0; }
         
-        /* MARCADORES */
+        /* MARCADORES OTIMIZADOS */
         .marcador-bombeiro {
-            font-size: 16px; text-align: center;
-            width: 34px !important; height: 34px !important;
+            font-size: 18px; text-align: center;
+            width: 36px !important; height: 36px !important;
             border-radius: 50%; background: white;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
             display: flex; align-items: center; justify-content: center;
         }
-        .risco-alto { border: 3px solid #d32f2f; background-color: #ffebee; }
-        .risco-medio { border: 3px solid #fbc02d; background-color: #fffde7; }
-        .risco-baixo { border: 3px solid #388e3c; background-color: #e8f5e9; }
-        .risco-padrao { border: 3px solid #9e9e9e; background-color: #f5f5f5; }
+        .risco-alto { border: 3px solid #d32f2f; }
+        .risco-medio { border: 3px solid #fbc02d; }
+        .risco-baixo { border: 3px solid #388e3c; }
+        .risco-padrao { border: 3px solid #9e9e9e; }
         
         /* POPUPS */
         .info-popup { min-width: 240px; font-size: 13px; color: #333; }
         .info-popup h3 { margin: 0 0 8px 0; color: #d32f2f; font-size: 16px; border-bottom: 2px solid #d32f2f; padding-bottom: 4px; }
         .info-popup p { margin: 4px 0; line-height: 1.4; }
 
-        /* LEGENDA */
-        .legenda-container {
-            background: white; padding: 8px 12px; border-radius: 4px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.2); font-size: 11px;
+        /* PAINEL INFORMATIVO DA PLANTA TÉCNICA */
+        .scip-info-box {
+            background: #222; padding: 12px; font-size: 0.8rem;
+            border-bottom: 1px solid #444; color: #fff;
         }
-        .legenda-linha { display: flex; align-items: center; margin-bottom: 4px; font-weight: bold; }
-        .legenda-circulo { width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; display: inline-block; }
+        .scip-linha { display: flex; justify-content: space-between; margin-bottom: 6px; }
+        .scip-linha span:last-child { color: #ffeb3b; font-weight: bold; }
+        .scip-secao-titulo {
+            background: #333; color: #ff9100; font-weight: bold;
+            padding: 4px; margin: 8px 0 4px 0; font-size: 0.75rem;
+            text-transform: uppercase; text-align: center; border-radius: 2px;
+        }
     </style>
 </head>
 <body>
@@ -117,199 +122,26 @@
         </div>
 
         <div id="visao-planta" class="conteiner-lista" style="display: none; background: #2d2d2d; color: #fff;">
-            <div style="padding: 12px; background: #222; font-size: 0.8rem; border-bottom: 1px solid #444;">
-                <strong>Área do Evento:</strong> 21.052 m² | <strong>Arena:</strong> 17.700 m²<br>
-                <small style="color: #ffeb3b;">Clique abaixo para simular as saídas de fuga:</small>
+            <div class="scip-info-box">
+                <div class="scip-secao-titulo">Quadro de Áreas Oficial</div>
+                <div class="scip-linha"><span>Área Útil do Evento:</span> <span>24.530 m²</span></div>
+                <div class="scip-linha"><span>Ambiente Fechado (Arena):</span> <span>17.700 m²</span></div>
+                <div class="scip-linha"><span>Área Montada Estrutural:</span> <span>11.573,20 m²</span></div>
+                <div class="scip-linha"><span>Área Total do Evento:</span> <span>21.052 m²</span></div>
+                
+                <div class="scip-secao-titulo">Responsabilidade Técnica</div>
+                <div class="scip-linha"><span>Engenheira Resp.:</span> <span style="color: #fff; font-size: 11px;">Daniela Brandão Siqueira</span></div>
+                
+                <div class="scip-secao-titulo">Rotas de Fuga do Público</div>
             </div>
             <ul class="lista-dados">
-                <li style="color:#fff;" onclick="simularRotaPlanta('norte')"><span class="status-prefixo">🔴</span> Eixo Norte - Saídas Arena</li>
-                <li style="color:#fff;" onclick="simularRotaPlanta('sul')"><span class="status-prefixo">🟡</span> Eixo Sul - Vila do Forró</li>
-                <li style="color:#fff;" onclick="simularRotaPlanta('completa')"><span class="status-prefixo">🟢</span> Ronda Completa de Varredura</li>
+                <li style="color:#fff;" onclick="simularRotaPlanta('arena')"><span class="status-prefixo">🔴</span> Rota A - Descompressão da Arena</li>
+                <li style="color:#fff;" onclick="simularRotaPlanta('vila')"><span class="status-prefixo">🟡</span> Rota B - Egressos da Vila do Forró</li>
+                <li style="color:#fff;" onclick="simularRotaPlanta('geral')"><span class="status-prefixo">🟢</span> Rota C - Varredura e Eixo Técnico</li>
             </ul>
         </div>
     </div>
     
     <div id="mapa"></div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="dados.js"></script>
-
-    <script>
-        // CONFIGURAÇÕES BASE DE COORDENADAS
-        const LAT_QUARTEL = -10.9126, LON_QUARTEL = -37.0543; // Quartel Siriri
-        const LAT_ARRAIA = -10.9852, LON_ARRAIA = -37.0515;   // Posição real do Arraiá do Povo
-
-        const mapa = L.map('mapa', { zoomControl: false }).setView([-10.7, -37.4], 8);
-        L.control.zoom({ position: 'topright' }).addTo(mapa);
-        
-        const camadaMapa = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(mapa);
-
-        // Grupos de camadas para alternar perfeitamente os contextos
-        const camadaEstadual = L.layerGroup().addTo(mapa);
-        const camadaPlantaSCIP = L.layerGroup();
-
-        // Marcador fixo do Quartel de Origem
-        L.marker([LAT_QUARTEL, LON_QUARTEL]).addTo(camadaEstadual)
-            .bindPopup("<b>Quartel Geral - CBMSE</b><br>Rua Siriri, 805");
-
-        let linhaTrajeto, carroAnimado, timerAnimacao;
-
-        // CONTROLE DE FLUXO DE VISÕES
-        function mudarModo(modo) {
-            limparGraficos();
-            if (modo === 'estado') {
-                document.getElementById('btn-estado').classList.add('ativo');
-                document.getElementById('btn-planta').classList.remove('ativo');
-                document.getElementById('visao-estado').style.display = 'block';
-                document.getElementById('visao-planta').style.display = 'none';
-                
-                mapa.removeLayer(camadaPlantaSCIP);
-                mapa.addLayer(camadaEstadual);
-                mapa.setView([-10.7, -37.4], 8);
-                camadaMapa.setUrl('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png');
-            } else {
-                document.getElementById('btn-estado').classList.remove('ativo');
-                document.getElementById('btn-planta').classList.add('ativo');
-                document.getElementById('visao-estado').style.display = 'none';
-                document.getElementById('visao-planta').style.display = 'block';
-                
-                mapa.removeLayer(camadaEstadual);
-                mapa.addLayer(camadaPlantaSCIP);
-                
-                // MUDANÇA IMPORTANTE: Zoom reduzido para 15 para dar uma perspectiva mais ampla da área costeira
-                mapa.setView([LAT_ARRAIA, LON_ARRAIA], 15); 
-                camadaMapa.setUrl('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png');
-                
-                construirEstruturasPlanta();
-            }
-        }
-
-        function limparGraficos() {
-            if (linhaTrajeto) mapa.removeLayer(linhaTrajeto);
-            if (carroAnimado) mapa.removeLayer(carroAnimado);
-            if (timerAnimacao) clearInterval(timerAnimacao);
-        }
-
-        // ================= CONSTRUTOR DE POPUPS CORRIGIDO =================
-        function gerarHTMLPopup(cidade) {
-            return `<div class="info-popup">
-                        <h3>${cidade.nome}</h3>
-                        <p><strong>⚠️ Risco:</strong> ${cidade.risco || '-'}</p>
-                        <p><strong>👨‍🚒 Efetivo:</strong> ${cidade.efetivo || '-'}</p>
-                        <p><strong>🚒 ABTs:</strong> ${cidade.abts || '-'}</p>
-                        <p><strong>🚑 UR:</strong> ${cidade.ur || '-'}</p>
-                        <p><strong>👨‍🚒 Coordenação:</strong> ${cidade.coordenacao || '-'}</p>
-                    </div>`;
-        }
-
-        // ================= INTERFACE ESTADUAL (ROTA RODOVIÁRIA) =================
-        function gerarRotaEstadual(lat, lon, classeRisco, cidadeDados) {
-            limparGraficos();
-            const url = `https://router.project-osrm.org/route/v1/driving/${LON_QUARTEL},${LAT_QUARTEL};${lon},${lat}?overview=full&geometries=geojson`;
-
-            fetch(url).then(r => r.json()).then(data => {
-                if(!data.routes || data.routes.length === 0) return;
-                const coords = data.routes[0].geometry.coordinates.map(p => [p[1], p[0]]);
-                
-                linhaTrajeto = L.polyline(coords, {color: '#d32f2f', weight: 4}).addTo(mapa);
-                mapa.fitBounds(linhaTrajeto.getBounds(), {padding: [40, 40]});
-                
-                animarDeslocamento(coords, classeRisco, cidadeDados);
-            });
-        }
-
-        // ================= INTERFACE INTERNA (PLANTA SCIP REAJUSTADA) =================
-        const pontosPlanta = [
-            { nome: "Posto Comando Central / Entrada", coord: [-10.9855, -37.0525], classe: "ponto-comando" },
-            { nome: "Saída Emergência A - Arena Oeste", coord: [-10.9850, -37.0520], classe: "ponto-saida" },
-            { nome: "Saída Emergência B - Setor Bares", coord: [-10.9846, -37.0512], classe: "ponto-saida" },
-            { nome: "Saída Emergência C - Palco/Vila", coord: [-10.9842, -37.0505], classe: "ponto-saida" }
-        ];
-
-        const rotasInternas = {
-            norte: [[-10.9855, -37.0525], [-10.9850, -37.0520], [-10.9846, -37.0512]],
-            sul: [[-10.9855, -37.0525], [-10.9846, -37.0512], [-10.9842, -37.0505]],
-            completa: [[-10.9855, -37.0525], [-10.9850, -37.0520], [-10.9846, -37.0512], [-10.9842, -37.0505], [-10.9855, -37.0525]]
-        };
-
-        function construirEstruturasPlanta() {
-            camadaPlantaSCIP.clearLayers();
-            pontosPlanta.forEach(p => {
-                L.circleMarker(p.coord, {
-                    radius: 8, fillColor: p.classe === 'ponto-comando' ? '#2196f3' : '#4caf50',
-                    color: '#fff', weight: 2, fillOpacity: 0.9
-                }).addTo(camadaPlantaSCIP).bindPopup(`<b>${p.nome}</b>`);
-            });
-        }
-
-        function simularRotaPlanta(tipo) {
-            limparGraficos();
-            const pontos = rotasInternas[tipo];
-            
-            linhaTrajeto = L.polyline(pontos, {color: '#00e676', weight: 5, dashArray: '5, 10'}).addTo(mapa);
-            animarDeslocamento(pontos, 'risco-baixo', null);
-        }
-
-        // ================= MOTOR DE ANIMAÇÃO COMPARTILHADO =================
-        function animarDeslocamento(pontos, classeRisco, cidadeDados) {
-            const icone = L.divIcon({ html: '🚒', className: `marcador-bombeiro ${classeRisco}`, iconSize: [34, 34], iconAnchor: [17, 17] });
-            carroAnimado = L.marker(pontos[0], { icon: icone }).addTo(mapa);
-            
-            let i = 0;
-            timerAnimacao = setInterval(() => {
-                if (i >= pontos.length) {
-                    clearInterval(timerAnimacao);
-                    if (cidadeDados) {
-                        carroAnimado.bindPopup(gerarHTMLPopup(cidadeDados)).openPopup();
-                    }
-                } else {
-                    carroAnimado.setLatLng(pontos[i++]);
-                }
-            }, 35);
-        }
-
-        // PARSER E MONITOR DE DADOS ESTADUAIS
-        let tCidades = 0, tEfetivo = 0, tAbts = 0, tUrs = 0;
-        const listaUl = document.getElementById('lista-cidades');
-
-        if (typeof PLANILHA_MANUAL !== 'undefined' && Array.isArray(PLANILHA_MANUAL)) {
-            PLANILHA_MANUAL.forEach(cidade => {
-                if (!cidade.lat || !cidade.lon) return;
-
-                tCidades++;
-                tEfetivo += parseInt(cidade.efetivo) || 0;
-                tAbts += parseInt(cidade.abts) || 0;
-                tUrs += parseInt(cidade.ur) || 0;
-
-                let classeRisco = 'risco-padrao', ind = '🚒';
-                if (cidade.risco === 'Alto') { classeRisco = 'risco-alto'; ind = '🔴'; }
-                else if (cidade.risco === 'Médio') { classeRisco = 'risco-medio'; ind = '🟡'; }
-                else if (cidade.risco === 'Baixo') { classeRisco = 'risco-baixo'; ind = '🟢'; }
-
-                // Adiciona os marcadores fixos com o popup corrigido na camada geral do estado
-                const m = L.marker([cidade.lat, cidade.lon], {
-                    icon: L.divIcon({ html: '🚒', className: `marcador-bombeiro ${classeRisco}`, iconSize: [30, 30] })
-                }).addTo(camadaEstadual).bindPopup(gerarHTMLPopup(cidade));
-
-                m.on('click', () => {
-                    gerarRotaEstadual(cidade.lat, cidade.lon, classeRisco, cidade);
-                });
-
-                const li = document.createElement('li');
-                li.innerHTML = `<span class="status-prefixo">${ind}</span> ${cidade.nome}`;
-                li.onclick = () => { 
-                    gerarRotaEstadual(cidade.lat, cidade.lon, classeRisco, cidade); 
-                };
-                listaUl.appendChild(li);
-            });
-
-            document.getElementById('tot-cidades').innerText = tCidades;
-            document.getElementById('tot-efetivo').innerText = tEfetivo;
-            document.getElementById('tot-abts').innerText = tAbts;
-            document.getElementById('tot-urs').innerText = tUrs;
-        }
-
-        setTimeout(() => mapa.invalidateSize(), 500);
-    </script>
-</body>
-</html>
+    <script src="https://
