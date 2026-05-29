@@ -31,7 +31,41 @@
             text-align: center; 
             cursor: pointer; 
             user-select: none;
-            line-height: 1.4; /* Garante boa leitura se o título quebrar linha */
+            line-height: 1.4;
+        }
+
+        /* ========================================== */
+        /* NOVO: ESTILOS DO DASHBOARD DE TOTAIS       */
+        /* ========================================== */
+        #dashboard-totais {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            padding: 12px;
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .quadro-total {
+            background: white;
+            padding: 8px;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            border-left: 3px solid #d32f2f;
+        }
+        .total-numero {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #222;
+        }
+        .total-rotulo {
+            font-size: 0.75rem;
+            color: #666;
+            font-weight: bold;
+            margin-top: 2px;
         }
         
         ul#lista-cidades { list-style-type: none; padding: 0; margin: 0; overflow-y: auto; flex-grow: 1; -webkit-overflow-scrolling: touch; }
@@ -137,9 +171,13 @@
 
         @media (max-width: 768px) {
             body { flex-direction: column; }
-            #menu-lateral { width: 100%; height: auto; max-height: 40vh; transition: height 0.3s ease; }
+            #menu-lateral { width: 100%; height: auto; max-height: 45vh; transition: height 0.3s ease; }
             #menu-lateral.recolhido { height: 48px !important; }
-            #menu-lateral.recolhido ul#lista-cidades { display: none !important; }
+            
+            /* Esconde a lista e o painel de totais ao recolher no mobile */
+            #menu-lateral.recolhido ul#lista-cidades,
+            #menu-lateral.recolhido #dashboard-totais { display: none !important; }
+            
             #menu-lateral h2 { font-size: 1rem; padding: 12px 15px; }
             #menu-lateral h2::after { content: ' ↕'; font-size: 0.8rem; opacity: 0.8; }
             #mapa { flex-grow: 1; height: auto; width: 100%; }
@@ -159,6 +197,26 @@
 
     <div id="menu-lateral">
         <h2>Municípios atendidos nos festejos juninos</h2>
+        
+        <div id="dashboard-totais">
+            <div class="quadro-total">
+                <span class="total-numero" id="tot-cidades">0</span>
+                <span class="total-rotulo">Cidades</span>
+            </div>
+            <div class="quadro-total">
+                <span class="total-numero" id="tot-efetivo">0</span>
+                <span class="total-rotulo">👨‍🚒 Efetivo</span>
+            </div>
+            <div class="quadro-total">
+                <span class="total-numero" id="tot-abts">0</span>
+                <span class="total-rotulo">🚒 ABTs</span>
+            </div>
+            <div class="quadro-total">
+                <span class="total-numero" id="tot-urs">0</span>
+                <span class="total-rotulo">🚑 URs</span>
+            </div>
+        </div>
+
         <ul id="lista-cidades"></ul>
     </div>
     <div id="mapa"></div>
@@ -203,7 +261,7 @@
             painel.classList.remove('legenda-alto', 'legenda-medio', 'legenda-baixo', 'legenda-padrao');
 
             const todasLinhas = [lAlto, lMedio, lBaixo, lPadrao];
-            todasLinhas.forEach(linha => { if (linha) { linha.style.opacity = '0.3'; linha.style.transform = 'scale(1)'; } });
+            todasLinhas.forEach(linha => { if (linha) { slice=true; linha.style.opacity = '0.3'; linha.style.transform = 'scale(1)'; } });
 
             if (classeRisco === 'risco-alto') {
                 painel.classList.add('legenda-alto');
@@ -286,86 +344,14 @@
             return '';
         }
 
+        // NOVO: Função auxiliar para extrair números com segurança e somar
+        function extrairNumeroParaSoma(valor) {
+            if (!valor) return 0;
+            if (typeof valor === 'number') return valor;
+            const numeros extraidos = String(valor).match(/\d+/g);
+            if (!numeros_extraidos) return 0;
+            return numeros_extraidos.reduce((acc, num) => acc + parseInt(num, 10), 0);
+        }
+
         function gerarHTMLPopup(cidade) {
-            let html = `<div class="info-popup"><h3>${cidade.nome}</h3>`;
-            html += `<h4>Informações Gerais</h4>
-                     <p>🚒 ABTs: ${cidade.abts || '-'}&nbsp;&nbsp;|&nbsp;&nbsp;🚑 UR: ${cidade.ur || '-'}</p>
-                     <p>👨‍🚒 Efetivo: ${cidade.efetivo || '-'}&nbsp;&nbsp;|&nbsp;&nbsp;⚠️ Risco: ${cidade.risco || '-'}</p>
-                     <p>👨‍🚒 Coordenação: ${cidade.coordenacao || '-'}</p>
-                     <p>👥 Público Estimado: ${cidade.publico || '-'}</p>`;
-
-            if (cidade.eventos_programados) {
-                const textoProg = String(cidade.eventos_programados).replace(/\n/g, '<br>');
-                html += `<h4>Eventos Programados</h4><p>${textoProg}</p>`;
-            }
-            
-            if (cidade.eventos_complementares) {
-                const textoComp = String(cidade.eventos_complementares).replace(/\n/g, '<br>');
-                html += `<h4>Eventos Complementares</h4><p>${textoComp}</p>`;
-            }
-
-            html += `</div>`;
-            return html;
-        }
-
-        if (typeof PLANILHA_MANUAL !== 'undefined' && Array.isArray(PLANILHA_MANUAL)) {
-            PLANILHA_MANUAL.forEach(itemRaw => {
-                try {
-                    const latRaw = obterCampoSeguro(itemRaw, ['lat', 'Latitude', 'Lat', 'LAT', 'latitude']);
-                    const lonRaw = obterCampoSeguro(itemRaw, ['lon', 'long', 'Longitude', 'Lon', 'Lng', 'LON', 'longitude']);
-                    
-                    const latCidade = parseFloat(latRaw);
-                    const lonCidade = parseFloat(lonRaw);
-
-                    if (isNaN(latCidade) || isNaN(lonCidade)) return;
-
-                    const cidadePadronizada = {
-                        nome: obterCampoSeguro(itemRaw, ['nome', 'Nome', 'Município', 'Municipio', 'Cidade']) || 'Município sem nome',
-                        risco: obterCampoSeguro(itemRaw, ['risco', 'Risco', 'Nível de Risco', 'risco ']),
-                        abts: obterCampoSeguro(itemRaw, ['abts', 'ABTs', 'abt', 'ABT']),
-                        ur: obterCampoSeguro(itemRaw, ['ur', 'UR']),
-                        efetivo: obterCampoSeguro(itemRaw, ['efetivo', 'Efetivo']),
-                        coordenacao: obterCampoSeguro(itemRaw, ['coordenacao', 'Coordenação', 'coordenador', 'Coordenação / Comando']),
-                        publico: obterCampoSeguro(itemRaw, ['publico', 'Público', 'Público Estimado']),
-                        eventos_programados: obterCampoSeguro(itemRaw, ['eventos_programados', 'Eventos Programados - Festas e celebrações', 'Eventos Programados']),
-                        eventos_complementares: obterCampoSeguro(itemRaw, ['eventos_complementares', 'Eventos Complementares - Atividades extras', 'Eventos Complementares'])
-                    };
-
-                    let classeRisco = 'risco-padrao';
-                    let indicadorLista = '🚒'; 
-
-                    if (cidadePadronizada.risco === 'Alto') { classeRisco = 'risco-alto'; indicadorLista = '🔴'; }
-                    else if (cidadePadronizada.risco === 'Médio') { classeRisco = 'risco-medio'; indicadorLista = '🟡'; }
-                    else if (cidadePadronizada.risco === 'Baixo') { classeRisco = 'risco-baixo'; indicadorLista = '🟢'; }
-
-                    const htmlDoBalao = gerarHTMLPopup(cidadePadronizada);
-                    const iconeCustomizado = L.divIcon({ html: '🚒', className: `marcador-bombeiro ${classeRisco}`, iconSize: [36, 36], iconAnchor: [18, 18], popupAnchor: [0, -18] });
-                    
-                    const marcador = L.marker([latCidade, lonCidade], { icon: iconeCustomizado })
-                        .addTo(mapa)
-                        .bindPopup(htmlDoBalao);
-
-                    marcador.on('popupopen', () => { atualizarCorDaLegenda(classeRisco); });
-
-                    const itemLista = document.createElement('li');
-                    itemLista.innerHTML = `<span class="status-risco-lista">${indicadorLista}</span> <span>${cidadePadronizada.nome}</span>`;
-                    
-                    itemLista.onclick = () => {
-                        gerarVetorOperacional(latCidade, lonCidade, marcador, classeRisco);
-                        if (window.innerWidth <= 768) {
-                            menuLateral.classList.add('recolhido');
-                            setTimeout(() => { mapa.invalidateSize(); }, 320);
-                        }
-                    };
-
-                    listaCidadesElemento.appendChild(itemLista);
-                } catch (erroInterno) {
-                    console.warn("Item ignorado devido a inconsistência nos dados de origem:", erroInterno);
-                }
-            });
-        } else {
-            console.error("A variável 'PLANILHA_MANUAL' não foi detectada no arquivo dados.js.");
-        }
-    </script>
-</body>
-</html>
+            let
