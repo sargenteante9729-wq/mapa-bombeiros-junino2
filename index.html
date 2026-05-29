@@ -153,7 +153,7 @@
     <script src="dados.js"></script>
 
     <script>
-        const LAT_QUARTEL = -10.9126, LON_QUARTEL = -37.0543; 
+       const LAT_QUARTEL = -10.9126, LON_QUARTEL = -37.0543; 
 
         let mapaEstado = null;
         let mapaPlanta = null;
@@ -161,23 +161,26 @@
         let rotaEstadoLinha = null, vtrEstadoMarcador = null, timerEstado = null;
         let rotaPlantaLinha = null, vtrPlantaMarcador = null, timerPlanta = null;
 
-        const hImagem = 2000;
-        const wImagem = 1500;
+        const hImagem = 1200;
+        const wImagem = 1800;
         const limitesPlanta = [[0, 0], [hImagem, wImagem]];
 
+        // POSIÇÕES CORRIGIDAS E ADIÇÃO DA VIATURA FIXA NA ÁREA RESERVADA
         const locaisPlantaSCIP = [
-            { nome: "Entrada Principal do Complexo / Bilheteria", coord: [540, 1620], cor: "#00b0ff" },
-            { nome: "Vila do Forró - Setor Aberto", coord: [750, 1330], cor: "#ff9100" },
-            { nome: "Saída de Emergência 04 - Praça de Alimentação", coord: [380, 1160], cor: "#00e676" },
-            { nome: "Saída de Emergência 03 - Setor Bares", coord: [380, 810], cor: "#00e676" },
-            { nome: "Ambiente Fechado (Arena de Shows)", coord: [540, 650], cor: "#ff9100" },
-            { nome: "Saída de Emergência 01 e 02 - Setor Arena / Motocross", coord: [540, 140], cor: "#00e676" }
+            { nome: "Entrada Principal do Complexo / Bilheteria", coord: [350, 1650], cor: "#00b0ff", tipo: "ponto" },
+            { nome: "Área Reservada - Estacionamento de Viaturas Operacionais", coord: [250, 1500], cor: "#d32f2f", tipo: "vtr_fixa" },
+            { nome: "Vila do Forró - Setor Comercial e Recreativo", coord: [720, 1250], cor: "#ff9100", tipo: "ponto" },
+            { nome: "Saída de Emergência 04 - Praça de Alimentação", coord: [320, 1100], cor: "#00e676", tipo: "ponto" },
+            { nome: "Saída de Emergência 03 - Setor Bares", coord: [320, 750], cor: "#00e676", tipo: "ponto" },
+            { nome: "Ambiente Fechado (Arena Principal de Shows)", coord: [650, 600], cor: "#ff9100", tipo: "ponto" },
+            { nome: "Saída de Emergência 01 e 02 - Setor Frontal / Descompressão", coord: [580, 150], cor: "#00e676", tipo: "ponto" }
         ];
 
+        // Ajuste das rotas de fuga automáticas para passarem exatamente pelas novas coordenadas
         const caminhosFugaPlanta = {
-            arena: [[540, 650], [380, 810], [540, 140]],
-            vila: [[750, 1330], [540, 1620], [380, 1160]],
-            geral: [[540, 1620], [750, 1330], [380, 1160], [380, 810], [540, 650], [540, 140]]
+            arena: [[650, 600], [320, 750], [580, 150]],
+            vila: [[720, 1250], [350, 1650], [320, 1100]],
+            geral: [[250, 1500], [350, 1650], [720, 1250], [320, 1100], [320, 750], [650, 600], [580, 150]]
         };
 
         function inicializarMapaEstado() {
@@ -190,7 +193,7 @@
 
             if (typeof PLANILHA_MANUAL !== 'undefined' && Array.isArray(PLANILHA_MANUAL)) {
                 PLANILHA_MANUAL.forEach(cidade => {
-                    if (!cidade.lat || !cidade.lon) return;
+                    if (!cidade.lat || !cityLonFix(cidade)) return;
 
                     let classeRisco = 'risco-padrao';
                     if (cidade.risco === 'Alto') classeRisco = 'risco-alto';
@@ -225,37 +228,26 @@
             L.imageOverlay('PLANTA_SCIP_page-0001.jpg', limitesPlanta).addTo(mapaPlanta);
             mapaPlanta.fitBounds(limitesPlanta);
 
+            // RENDERIZADOR DOS MARCADORES DA PLANTA
             locaisPlantaSCIP.forEach(p => {
-                L.circleMarker(p.coord, {
-                    radius: 10, fillColor: p.cor, color: '#ffffff', weight: 2.5, fillOpacity: 0.95
-                }).addTo(mapaPlanta).bindPopup(`<b>${p.nome}</b>`);
+                if (p.tipo === "vtr_fixa") {
+                    // Renderiza o carrinho de bombeiro fixo na área técnica reservada
+                    L.marker(p.coord, {
+                        icon: L.divIcon({ 
+                            html: '🚒', 
+                            className: 'marcador-bombeiro risco-alto', 
+                            iconSize: [32, 32],
+                            iconAnchor: [16, 16]
+                        })
+                    }).addTo(mapaPlanta).bindPopup(`<b>${p.nome}</b>`);
+                } else {
+                    // Renderiza os pontos normais de controle e saídas
+                    L.circleMarker(p.coord, {
+                        radius: 9, fillColor: p.cor, color: '#ffffff', weight: 2, fillOpacity: 0.95
+                    }).addTo(mapaPlanta).bindPopup(`<b>${p.nome}</b>`);
+                }
             });
         }
-
-        function mudarModo(modo) {
-            if (modo === 'estado') {
-                document.getElementById('btn-estado').className = 'btn-modo ativo';
-                document.getElementById('btn-planta').className = 'btn-modo';
-                document.getElementById('visao-estado').style.display = 'block';
-                document.getElementById('visao-planta').style.display = 'none';
-                
-                document.getElementById('mapa-estado').style.display = 'block';
-                document.getElementById('mapa-planta').style.display = 'none';
-                
-                setTimeout(() => mapaEstado.invalidateSize(), 50);
-            } else {
-                document.getElementById('btn-estado').className = 'btn-modo';
-                document.getElementById('btn-planta').className = 'btn-modo ativo';
-                document.getElementById('visao-estado').style.display = 'none';
-                document.getElementById('visao-planta').style.display = 'block';
-                
-                document.getElementById('mapa-estado').style.display = 'none';
-                document.getElementById('mapa-planta').style.display = 'block';
-                
-                setTimeout(() => mapaPlanta.invalidateSize(), 50);
-            }
-        }
-
         function gerarHTMLPopup(cidade) {
             let principal = cidade.eventos_principais || cidade.evento_principal || cidade.eventosPrincipais || cidade.principais || '-';
             let complementar = cidade.eventos_complementares || cidade.evento_complementar || cidade.eventosComplementares || cidade.complementares || '-';
