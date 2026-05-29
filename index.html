@@ -149,4 +149,41 @@
         <div id="mapa-planta" class="mapa-janela" style="display: none;"></div>
     </div>
 
-    <script src="
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="dados.js"></script>
+
+    <script>
+        const LAT_QUARTEL = -10.9126, LON_QUARTEL = -37.0543; 
+
+        let mapaEstado = null;
+        let mapaPlanta = null;
+        
+        let rotaEstadoLinha = null, vtrEstadoMarcador = null, timerEstado = null;
+        let rotaPlantaLinha = null, vtrPlantaMarcador = null, timerPlanta = null;
+
+        const hImagem = 1200;
+        const wImagem = 1800;
+        const limitesPlanta = [[0, 0], [hImagem, wImagem]];
+
+        const locaisPlantaSCIP = [
+            { nome: "Entrada Principal do Complexo / Bilheteria", coord: [540, 1620], cor: "#00b0ff" },
+            { nome: "Vila do Forró - Setor Aberto", coord: [750, 1330], cor: "#ff9100" },
+            { nome: "Saída de Emergência 04 - Praça de Alimentação", coord: [380, 1160], cor: "#00e676" },
+            { nome: "Saída de Emergência 03 - Setor Bares", coord: [380, 810], cor: "#00e676" },
+            { nome: "Ambiente Fechado (Arena de Shows)", coord: [540, 650], cor: "#ff9100" },
+            { nome: "Saída de Emergência 01 e 02 - Setor Arena / Motocross", coord: [540, 140], cor: "#00e676" }
+        ];
+
+        const caminhosFugaPlanta = {
+            arena: [[540, 650], [380, 810], [540, 140]],
+            vila: [[750, 1330], [540, 1620], [380, 1160]],
+            geral: [[540, 1620], [750, 1330], [380, 1160], [380, 810], [540, 650], [540, 140]]
+        };
+
+        function inicializarMapaEstado() {
+            mapaEstado = L.map('mapa-estado', { zoomControl: false }).setView([-10.7, -37.4], 8);
+            L.control.zoom({ position: 'topright' }).addTo(mapaEstado);
+            
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(mapaEstado);
+
+            L.marker([LAT_QUARTEL, LON_QUARTEL]).addTo(mapaEstado).bindPopup("<b>Quartel Geral - CBM
