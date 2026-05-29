@@ -197,15 +197,19 @@
                     else if (cidade.risco === 'Médio') classeRisco = 'risco-medio';
                     else if (cidade.risco === 'Baixo') classeRisco = 'risco-baixo';
 
-                    const m = L.marker([cidade.lat, cidade.lon], {
+                    const m = L.marker([cidade.lat, cityLonFix(cidade)], {
                         icon: L.divIcon({ html: '🚒', className: `marcador-bombeiro ${classeRisco}`, iconSize: [30, 30] })
                     }).addTo(mapaEstado).bindPopup(gerarHTMLPopup(cidade));
 
                     m.on('click', () => {
-                        gerarRotaEstadual(cidade.lat, cidade.lon, classeRisco, cidade);
+                        gerarRotaEstadual(cidade.lat, cityLonFix(cidade), classeRisco, cidade);
                     });
                 });
             }
+        }
+
+        function cityLonFix(c) {
+            return c.lon || c.lng || c.longit || c.longitude;
         }
 
         function inicializarMapaPlanta() {
@@ -270,10 +274,15 @@
                     '</div>';
         }
 
+        function limparRotaAnterior() {
+            if (timerEstado) { clearInterval(timerEstado); timerEstado = null; }
+            if (rotaEstadoLinha) { mapaEstado.removeLayer(rotaEstadoLinha); rotaEstadoLinha = null; }
+            if (vtrEstadoMarcador) { mapaEstado.removeLayer(vtrEstadoMarcador); vtrEstadoMarcador = null; }
+        }
+
         function gerarRotaEstadual(lat, lon, classeRisco, cityDados) {
-            if (rotaEstadoLinha) mapaEstado.removeLayer(rotaEstadoLinha);
-            if (vtrEstadoMarcador) mapaEstado.removeLayer(vtrEstadoMarcador);
-            if (timerEstado) clearInterval(timerEstado);
+            // Garante a limpeza completa antes de iniciar qualquer nova rota
+            limparRotaAnterior();
 
             const url = `https://router.project-osrm.org/route/v1/driving/${LON_QUARTEL},${LAT_QUARTEL};${lon},${lat}?overview=full&geometries=geojson`;
 
@@ -294,6 +303,8 @@
 
                 let step = 0;
                 timerEstado = setInterval(() => {
+                    if (!vtrEstadoMarcador) { clearInterval(timerEstado); return; }
+                    
                     if (step >= coords.length - 1) {
                         clearInterval(timerEstado);
                         vtrEstadoMarcador.setLatLng(coords[coords.length - 1]);
@@ -306,7 +317,7 @@
                         if (step >= coords.length) step = coords.length - 1;
                     }
                 }, 15);
-            });
+            }).catch(e => console.log("Erro de roteamento:", e));
         }
 
         function simularRotaPlanta(tipo) {
@@ -345,7 +356,9 @@
 
             if (typeof PLANILHA_MANUAL !== 'undefined' && Array.isArray(PLANILHA_MANUAL)) {
                 PLANILHA_MANUAL.forEach(cidade => {
-                    if (!cidade.lat || !cidade.lon) return;
+                    let cLat = cidade.lat;
+                    let cLon = cityLonFix(cidade);
+                    if (!cLat || !cLon) return;
 
                     tCidades++;
                     tEfetivo += parseInt(cidade.efetivo) || 0;
@@ -361,7 +374,7 @@
                     li.innerHTML = `<span class="status-prefixo">${ind}</span> ${cidade.nome}`;
                     li.onclick = () => { 
                         mudarModo('estado');
-                        gerarRotaEstadual(cidade.lat, cidade.lon, classeRisco, cidade); 
+                        gerarRotaEstadual(cLat, cLon, classeRisco, cidade); 
                     };
                     listaUl.appendChild(li);
                 });
