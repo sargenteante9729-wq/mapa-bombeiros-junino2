@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
 
     <style>
-        /* ESTILOS E RESPONSIVIDADE */
+        /* ESTILOS PARA COMPUTADOR (DESKTOP) */
         body { margin: 0; padding: 0; display: flex; height: 100vh; font-family: Arial, sans-serif; background-color: #f4f4f9; overflow: hidden; }
         
         #menu-lateral { 
@@ -18,8 +18,8 @@
             z-index: 1000; 
             display: flex; 
             flex-direction: column;
-            transition: all 0.3s ease; /* Animação suave para qualquer direção */
-            overflow: hidden; /* IMPEDE QUE A LISTA TRANSBORDE AO FECHAR */
+            transition: transform 0.3s ease, width 0.3s ease, margin-right 0.3s ease;
+            overflow: hidden;
         }
         
         #menu-lateral h2 { 
@@ -32,13 +32,12 @@
             cursor: pointer; 
             user-select: none;
             white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
         }
 
-        /* Fechamento manual no DESKTOP (Recolhe para a esquerda) */
+        /* Fechamento no Computador: desliza para a esquerda deixando uma aba de 45px */
         #menu-lateral.recolhido { 
-            width: 50px; 
+            transform: translateX(-275px);
+            margin-right: -275px;
         }
         
         ul#lista-cidades { list-style-type: none; padding: 0; margin: 0; overflow-y: auto; flex-grow: 1; -webkit-overflow-scrolling: touch; }
@@ -61,7 +60,6 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.2s ease;
         }
         
         .risco-alto { border: 3px solid #d32f2f; background-color: #ffebee; }
@@ -69,26 +67,30 @@
         .risco-baixo { border: 3px solid #388e3c; background-color: #e8f5e9; }
         .risco-padrao { border: 3px solid #9e9e9e; background-color: #f5f5f5; }
         
-        /* Estilos do Popup */
         .info-popup { min-width: 250px; max-width: 300px; font-size: 13px; }
         .info-popup h3 { margin: 0 0 10px 0; color: #d32f2f; font-size: 18px; border-bottom: 2px solid #d32f2f; padding-bottom: 5px; }
         .info-popup h4 { margin: 12px 0 5px 0; color: #444; background-color: #f5f5f5; padding: 3px; border-radius: 3px; }
         .info-popup p { margin: 3px 0; line-height: 1.4; }
         
-        /* COMPORTAMENTO EXCLUSIVO PARA MOBILE */
+        /* COMPORTAMENTO EXCLUSIVO PARA CELULAR (MOBILE) */
         @media (max-width: 768px) {
-            body { flex-direction: column-reverse; }
+            body { flex-direction: column; } /* Inverte: Menu vai para o TOPO, Mapa para baixo */
             
             #menu-lateral { 
                 width: 100%; 
                 height: 40vh; 
-                flex-shrink: 0;
+                transform: none !important; /* Anula o efeito de deslizar para a esquerda do desktop */
+                margin-right: 0 !important;
+                transition: height 0.3s ease;
             }
             
-            /* Fechamento manual/automático no MOBILE (Recolhe para baixo) */
+            /* Fechamento no Mobile: Encolhe verticalmente para cima de forma limpa */
             #menu-lateral.recolhido { 
-                width: 100% !important;
-                height: 45px !important; 
+                height: 46px !important; 
+            }
+            
+            #menu-lateral.recolhido ul#lista-cidades {
+                display: none; /* Esconde a lista para não vazar no mapa */
             }
             
             #menu-lateral h2 { 
@@ -99,7 +101,7 @@
             #menu-lateral h2::after {
                 content: ' ↕';
                 font-size: 0.8rem;
-                opacity: 0.7;
+                opacity: 0.8;
             }
             
             #mapa { 
@@ -143,10 +145,9 @@
         const listaCidadesElemento = document.getElementById('lista-cidades');
         const menuLateral = document.getElementById('menu-lateral');
 
-        // CONTROLE MANUAL ADAPTÁVEL (Funciona em Computador e Celular)
+        // CLIQUE NO TÍTULO VERMELHO (Funciona perfeitamente em ambos os ambientes)
         document.querySelector('#menu-lateral h2').onclick = () => {
             menuLateral.classList.toggle('recolhido');
-            // Força o mapa a se reajustar ao novo espaço disponível na tela
             setTimeout(() => { mapa.invalidateSize(); }, 320);
         };
 
@@ -278,7 +279,7 @@
                 itemLista.onclick = () => {
                     gerarVetorOperacional(latCidade, lonCidade, marcador, classeRisco);
                     
-                    // FECHAMENTO AUTOMÁTICO: Apenas se o usuário estiver no celular
+                    // FECHAMENTO AUTOMÁTICO NO MOBILE
                     if (window.innerWidth <= 768) {
                         menuLateral.classList.add('recolhido');
                         setTimeout(() => { mapa.invalidateSize(); }, 320);
