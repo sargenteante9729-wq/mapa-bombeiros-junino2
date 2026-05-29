@@ -145,7 +145,7 @@
                 <div class="scip-linha"><span>Área Montada Estrutural:</span> <span>11.573,20 m²</span></div>
                 <div class="scip-linha"><span>Área Total do Evento:</span> <span>21.052 m²</span></div>
                 
-                <div class="scip-secao-titulo">Responsabilidade Técnico</div>
+                <div class="scip-secao-titulo">Responsabilidade Técnica</div>
                 <div class="scip-linha"><span>Engenheira Resp.:</span> <span style="color: #fff; font-size: 11px;">Daniela Brandão Siqueira</span></div>
                 
                 <div class="scip-secao-titulo">Rotas de Fuga do Público</div>
@@ -179,7 +179,7 @@
         const wImagem = 1800;
         const limitesPlanta = [[0, 0], [hImagem, wImagem]];
 
-        // POSIÇÕES CALIBRADAS E ADIÇÃO DA ÁREA RESERVADA PARA VTR OPERACIONAL
+        // POSIÇÕES CALIBRADAS E ADIÇÃO DA ÁREA RESERVADA PARA VTR OPERACIONAL (CARRINHO FIXO)
         const locaisPlantaSCIP = [
             { nome: "Entrada Principal do Complexo / Bilheteria", coord: [350, 1650], cor: "#00b0ff", tipo: "ponto" },
             { nome: "Área Reservada - Estacionamento de Viaturas Operacionais", coord: [250, 1500], cor: "#d32f2f", tipo: "vtr_fixa" },
@@ -243,7 +243,6 @@
 
             locaisPlantaSCIP.forEach(p => {
                 if (p.tipo === "vtr_fixa") {
-                    // Adiciona o carrinho estável na área operacional
                     L.marker(p.coord, {
                         icon: L.divIcon({ 
                             html: '🚒', 
@@ -308,7 +307,6 @@
                     '</div>';
         }
 
-        // FUNÇÃO REFORMULADA: GARANTE A LIMPEZA TOTAL DA LINHA ANTERIOR ANTES DE DESENHAR A PRÓXIMA
         function limparRotaAnterior() {
             if (timerEstado) { clearInterval(timerEstado); timerEstado = null; }
             if (rotaEstadoLinha) { mapaEstado.removeLayer(rotaEstadoLinha); rotaEstadoLinha = null; }
@@ -342,4 +340,109 @@
                 document.getElementById('tel-tempo').innerText = tempoTexto;
                 document.getElementById('painel-telemetria').style.display = 'block';
 
-                const coords = data.routes[0].geometry
+                const coords = data.routes[0].geometry.coordinates.map(p => [p[1], p[0]]);
+                
+                rotaEstadoLinha = L.polyline(coords, {color: '#d32f2f', weight: 4}).addTo(mapaEstado);
+                mapaEstado.fitBounds(rotaEstadoLinha.getBounds(), {padding: [40, 40]});
+                
+                const icone = L.divIcon({ html: '🚒', className: `marcador-bombeiro ${classeRisco}`, iconSize: [34, 34], iconAnchor: [17, 17] });
+                vtrEstadoMarcador = L.marker(coords[0], { icon: icone }).addTo(mapaEstado);
+                
+                let taxaSalto = 1;
+                if (coords.length > 300) taxaSalto = 8;
+                else if (coords.length > 150) taxaSalto = 4;
+                else if (coords.length > 60) taxaSalto = 2;
+
+                let step = 0;
+                timerEstado = setInterval(() => {
+                    if (!vtrEstadoMarcador) { clearInterval(timerEstado); return; }
+                    
+                    if (step >= coords.length - 1) {
+                        clearInterval(timerEstado);
+                        vtrEstadoMarcador.setLatLng(coords[coords.length - 1]);
+                        if (cityDados) {
+                            vtrEstadoMarcador.bindPopup(gerarHTMLPopup(cityDados, kmCalculado, tempoTexto)).openPopup();
+                        }
+                    } else {
+                        vtrEstadoMarcador.setLatLng(coords[step]);
+                        step += taxaSalto;
+                        if (step >= coords.length) step = coords.length - 1;
+                    }
+                }, 15);
+            }).catch(e => console.log("Erro de roteamento:", e));
+        }
+
+        function simularRotaPlanta(tipo) {
+            if (rotaPlantaLinha) mapaPlanta.removeLayer(rotaPlantaLinha);
+            if (vtrPlantaMarcador) mapaPlanta.removeLayer(vtrPlantaMarcador);
+            if (timerPlanta) clearInterval(timerPlanta);
+
+            const pontos = caminhosFugaPlanta[tipo];
+            rotaPlantaLinha = L.polyline(pontos, {color: '#ff1744', weight: 5, dashArray: '10, 15'}).addTo(mapaPlanta);
+            
+            let passosSuaves = [];
+            for (let i = 0; i < pontos.length - 1; i++) {
+                let p1 = pontos[i], p2 = pontos[i+1];
+                for (let j = 0; j <= 10; j++) {
+                    passosSuaves.push([p1[0] + (p2[0] - p1[0]) * (j / 10), p1[1] + (p2[1] - p1[1]) * (j / 10)]);
+                }
+            }
+
+            const icone = L.divIcon({ html: '🚒', className: 'marcador-bombeiro risco-alto', iconSize: [34, 34], iconAnchor: [17, 17] });
+            vtrPlantaMarcador = L.marker(passosSuaves[0], { icon: icone }).addTo(mapaPlanta);
+
+            let frame = 0;
+            timerPlanta = setInterval(() => {
+                if (frame >= passosSuaves.length) {
+                    clearInterval(timerPlanta);
+                } else {
+                    vtrPlantaMarcador.setLatLng(passosSuaves[frame++]);
+                }
+            }, 10);
+        }
+
+        function construirListagemEsquerda() {
+            let tCidades = 0, tEfetivo = 0, tAbts = 0, tUrs = 0;
+            const listaUl = document.getElementById('lista-cidades');
+            listaUl.innerHTML = '';
+
+            if (typeof PLANILHA_MANUAL !== 'undefined' && Array.isArray(PLANILHA_MANUAL)) {
+                PLANILHA_MANUAL.forEach(cidade => {
+                    let cLat = cidade.lat;
+                    let cLon = cityLonFix(cidade);
+                    if (!cLat || !cLon) return;
+
+                    tCidades++;
+                    tEfetivo += parseInt(cidade.efetivo) || 0;
+                    tAbts += parseInt(cidade.abts) || 0;
+                    tUrs += parseInt(cidade.ur) || 0;
+
+                    let ind = '🚒', classeRisco = 'risco-padrao';
+                    if (cidade.risco === 'Alto') { ind = '🔴'; classeRisco = 'risco-alto'; }
+                    else if (cidade.risco === 'Médio') { ind = '🟡'; classeRisco = 'risco-medio'; }
+                    else if (cidade.risco === 'Baixo') { ind = '🟢'; classeRisco = 'risco-baixo'; }
+
+                    const li = document.createElement('li');
+                    li.innerHTML = `<span class="status-prefixo">${ind}</span> ${cidade.nome}`;
+                    li.onclick = () => { 
+                        mudarModo('estado');
+                        gerarRotaEstadual(cLat, cLon, classeRisco, cidade); 
+                    };
+                    listaUl.appendChild(li);
+                });
+
+                document.getElementById('tot-cidades').innerText = tCidades;
+                document.getElementById('tot-efetivo').innerText = tEfetivo;
+                document.getElementById('tot-abts').innerText = tAbts;
+                document.getElementById('tot-urs').innerText = tUrs;
+            }
+        }
+
+        window.onload = () => {
+            inicializarMapaEstado();
+            inicializarMapaPlanta();
+            construirListagemEsquerda();
+        };
+    </script>
+</body>
+</html>
