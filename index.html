@@ -209,7 +209,9 @@
                 zoomControl: false, crs: L.CRS.Simple, minZoom: -2, maxZoom: 2, maxBounds: limitesPlanta
             });
             L.control.zoom({ position: 'topright' }).addTo(mapaPlanta);
-            L.imageOverlay('PLANTA_SCIP_page-0001.jpg', limitesPlanta).addTo(mapaPlanta);
+            
+            // Vincula a imagem limpa e atualizada da planta complementar
+            L.imageOverlay('image_16.png', limitesPlanta).addTo(mapaPlanta);
             mapaPlanta.fitBounds(limitesPlanta);
 
             // Marcador invisível centralizado para ancorar a janela flutuante de Áreas
@@ -235,7 +237,6 @@
                     <p><strong>🎪 Ambiente Fechado (Arena):</strong> 17.700 m²</p>
                     <p><strong>🏗️ Área Montada Estrutural:</strong> 11.573,20 m²</p>
                     <p><strong>🗺️ Área Total do Evento:</strong> 35.903,21 m²</p></div>`;
-                mapaPlanta.setView([600, 900], 0);
                 marcadorInfoGeral.bindPopup(html).openPopup();
             }
         }
