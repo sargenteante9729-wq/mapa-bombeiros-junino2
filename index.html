@@ -157,8 +157,15 @@
         let mapaEstado = null, mapaPlanta = null;
         let rotaEstadoLinha = null, vtrEstadoMarcador = null, timerEstado = null;
         
-        // Objeto para armazenar os pontos de interesse na planta para interação
-        let pontosPSCIP = {};
+        // Estrutura de vetores para agrupar múltiplos marcadores ocultos por tipo
+        let marcadoresPlanta = {
+            'saidas': [],
+            'entrada': [],
+            'vtr_arraia': [],
+            'vtr_vila': [],
+            'guarnicao': [],
+            'areas': null
+        };
 
         const hImagem = 1200, wImagem = 1800;
         const limitesPlanta = [[0, 0], [hImagem, wImagem]];
@@ -216,28 +223,65 @@
             });
             L.control.zoom({ position: 'topright' }).addTo(mapaPlanta);
             
-            // Certifique-se que o nome do arquivo abaixo é exatamente o que está na sua pasta
             L.imageOverlay('PLANTA_SCIP_page-0001.jpg', limitesPlanta).addTo(mapaPlanta);
             mapaPlanta.fitBounds(limitesPlanta);
 
-            // Mapeamento dos pontos baseado na imagem fornecida (Y, X)
-            // Estes pontos servem como ancoras para os destaques interativos
-            pontosPSCIP['saidas'] = L.circleMarker([1050, 600], { radius: 1, opacity: 0 }).addTo(mapaPlanta).bindPopup("<b>Saídas de Emergência</b><br>Identificadas pelas placas verdes em todo o perímetro.");
-            pontosPSCIP['entrada'] = L.circleMarker([1080, 1630], { radius: 1, opacity: 0 }).addTo(mapaPlanta).bindPopup("<b>Entrada de Público</b><br>Acesso Principal via Vila do Forró / Estacionamento.");
-            pontosPSCIP['vtr_arraia'] = L.circleMarker([530, 800], { radius: 1, opacity: 0 }).addTo(mapaPlanta).bindPopup("<b>Viaturas - Arraiá do Povo</b><br>Posicionamento estratégico para combate e resgate no setor das barracas.");
-            pontosPSCIP['vtr_vila'] = L.circleMarker([850, 1450], { radius: 1, opacity: 0 }).addTo(mapaPlanta).bindPopup("<b>Viaturas - Vila do Forró</b><br>Apoio operacional no setor cultural e gastronômico.");
-            pontosPSCIP['guarnicao'] = L.circleMarker([550, 450], { radius: 1, opacity: 0 }).addTo(mapaPlanta).bindPopup("<b>Guarnições a Pé</b><br>Bombeiros em patrulhamento constante na Arena de Shows.");
+            // Mapeamento exato de todas as posições observadas na imagem enviada
             
-            // Ponto central para o Quadro de Áreas
-            pontosPSCIP['areas'] = L.marker([600, 900], { opacity: 0 }).addTo(mapaPlanta);
+            // SAÍDAS DE EMERGÊNCIA (Percorrendo o fluxo completo mapeado)
+            adicionarPontoPlanta('saidas', [650, 60], "<b>Saída Emergencial Oeste</b><br>Rota desimpedida integrada ao fluxo periférico.");
+            adicionarPontoPlanta('saidas', [850, 130], "<b>Saída Emergencial Noroeste</b><br>Ligação imediata às rotas de evacuação.");
+            adicionarPontoPlanta('saidas', [1110, 340], "<b>Saída Emergencial Norte Central</b><br>Posto de escape estratégico.");
+            adicionarPontoPlanta('saidas', [1110, 715], "<b>Saída Emergencial Norte Vila</b><br>Fluxo direto de escape da Vila do Forró.");
+            adicionarPontoPlanta('saidas', [730, 550], "<b>Saída Emergencial Central</b><br>Evacuação central integrada.");
+            adicionarPontoPlanta('saidas', [630, 610], "<b>Saída Emergencial Leste Central</b><br>Ponto focal de escape rápido.");
+            adicionarPontoPlanta('saidas', [250, 550], "<b>Saída Emergencial Sul</b><br>Rota periférica sul.");
+
+            // ENTRADA DE PÚBLICO (Posicionada exatamente na marcação azul solicitada)
+            adicionarPontoPlanta('entrada', [410, 395], "<b>Entrada de Público Principal (Central)</b><br>Ponto de controle e triagem de acesso dos visitantes.");
+
+            // VIATURAS ARRAIÁ DO POVO
+            adicionarPontoPlanta('vtr_arraia', [500, 685], "<b>Viatura CBMSE - Setor Arraiá do Povo</b><br>Prontidão operacional imediata na área das barracas.");
+
+            // VIATURAS VILA DO FORRÓ
+            adicionarPontoPlanta('vtr_vila', [830, 960], "<b>Viatura CBMSE - Setor Vila do Forró</b><br>Unidade móvel de resposta rápida adjacente à bilheteria.");
+
+            // GUARNIÇÕES A PÉ (Os dois grupos na arena do Arraiá)
+            adicionarPontoPlanta('guarnicao', [545, 290], "<b>Guarnição CBMSE - Patrulha Oeste</b><br>Bombeiros militares em patrulhamento preventivo a pé.");
+            adicionarPontoPlanta('guarnicao', [545, 490], "<b>Guarnição CBMSE - Patrulha Leste</b><br>Bombeiros militares cobrindo o perímetro central da arena.");
+
+            // Ponto de ancoragem estático do Quadro de Áreas
+            marcadoresPlanta['areas'] = L.marker([600, 900], { opacity: 0 }).addTo(mapaPlanta);
         }
 
+        function adicionarPontoPlanta(tipo, coord, htmlPopup) {
+            let m = L.circleMarker(coord, { radius: 1, opacity: 0 }).addTo(mapaPlanta).bindPopup(htmlPopup);
+            marcadoresPlanta[tipo].push(m);
+        }
+
+        // FUNÇÃO DE ITERAÇÃO DINÂMICA: Percorre todos os itens sequencialmente
         function interagirPlanta(tipo) {
             mudarModo('planta');
-            const marcador = pontosPSCIP[tipo];
-            if(marcador) {
-                mapaPlanta.setView(marcador.getLatLng(), 0);
-                marcador.openPopup();
+            const lista = marcadoresPlanta[tipo];
+            
+            if (lista && lista.length > 0) {
+                // Se houver mais de um item (ex: saídas ou guarnições), enquadra todos na tela primeiro
+                if(lista.length > 1) {
+                    let grupoBounds = L.featureGroup(lista).getBounds();
+                    mapaPlanta.fitBounds(grupoBounds, { padding: [50, 50] });
+                }
+
+                let i = 0;
+                // Executa o percurso item por item abrindo os balões automaticamente
+                function percorrerItens() {
+                    if (i < lista.length) {
+                        if(lista.length === 1) { mapaPlanta.setView(lista[i].getLatLng(), 0); }
+                        lista[i].openPopup();
+                        i++;
+                        setTimeout(percorrerItens, 2200); // Avança para o próximo item a cada 2.2 segundos
+                    }
+                }
+                percorrerItens();
             }
         }
 
@@ -260,8 +304,8 @@
                     <p><strong>🎪 Ambiente Fechado (Arena):</strong> 17.700 m²</p>
                     <p><strong>🏗️ Área Montada Estrutural:</strong> 11.573,20 m²</p>
                     <p><strong>🗺️ Área Total do Evento:</strong> 35.903,21 m²</p></div>`;
-                pontosPSCIP['areas'].bindPopup(html).openPopup();
-                mapaPlanta.setView([600, 900], 0);
+                marcadoresPlanta['areas'].bindPopup(html).openPopup();
+                mapaPlanta.setView([600, 900], -1);
             }
         }
 
