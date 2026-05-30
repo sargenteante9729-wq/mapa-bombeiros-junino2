@@ -83,7 +83,7 @@
         #area-mapas { flex-grow: 1; height: 100vh; position: relative; background: #e5e9f0; }
         .mapa-janela { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
         
-        /* MARCADOR PADRÃO COM BORDA CIRCULAR (PARA O MAPA ESTADUAL) */
+        /* MARCADORES (MAPA ESTADUAL) */
         .marcador-bombeiro {
             font-size: 18px; text-align: center;
             width: 36px !important; height: 36px !important;
@@ -95,17 +95,6 @@
         .risco-medio { border: 3px solid #fbc02d; }
         .risco-baixo { border: 3px solid #388e3c; }
         .risco-padrao { border: 3px solid #9e9e9e; }
-
-        /* NOVO MARCADOR LIMPO SEM CÍRCULO / SEM BORDA (EXCLUSIVO PARA A PLANTA PSCIP) */
-        .marcador-planta-limpo {
-            font-size: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: transparent !important;
-            border: none !important;
-            box-shadow: none !important;
-        }
         
         .info-popup { min-width: 280px; font-size: 13px; color: #333; }
         .info-popup h3 { margin: 0 0 8px 0; color: #d32f2f; font-size: 16px; border-bottom: 2px solid #d32f2f; padding-bottom: 4px; }
@@ -166,15 +155,6 @@
         const hImagem = 1200, wImagem = 1800;
         const limitesPlanta = [[0, 0], [hImagem, wImagem]];
 
-        // LISTA OPERACIONAL: Somente a Entrada Principal e os ícones
-        const locaisPlantaSCIP = [
-            { nome: "Entrada de Público Principal", coord: [100, 900], cor: "#00b0ff", tipo: "ponto" },
-            { nome: "Viatura CBMSE - Arraiá do Povo", coord: [500, 600], tipo: "vtr" },
-            { nome: "Viatura CBMSE - Vila do Forró", coord: [800, 1300], tipo: "vtr" },
-            { nome: "Guarnição a Pé - Setor Arena", coord: [400, 400], tipo: "guarnicao" },
-            { nome: "Guarnição a Pé - Setor Palco", coord: [700, 300], tipo: "guarnicao" }
-        ];
-
         function cityLonFix(c) { return c.lon || c.lng || c.longit || c.longitude; }
 
         function construirListagemEsquerda() {
@@ -232,21 +212,7 @@
             L.imageOverlay('PLANTA_SCIP_page-0001.jpg', limitesPlanta).addTo(mapaPlanta);
             mapaPlanta.fitBounds(limitesPlanta);
 
-            // Renderiza os ícones limpos (sem círculos ou bordas) sobre a planta do PSCIP
-            locaisPlantaSCIP.forEach(p => {
-                let iconeLimpo;
-                if (p.tipo === "vtr") {
-                    iconeLimpo = L.divIcon({ html: '🚒', className: 'marcador-planta-limpo', iconSize: [30, 30], iconAnchor: [15, 15] });
-                } else if (p.tipo === "guarnicao") {
-                    iconeLimpo = L.divIcon({ html: '🧑‍🚒', className: 'marcador-planta-limpo', iconSize: [28, 28], iconAnchor: [14, 14] });
-                }
-
-                if (iconeLimpo) {
-                    L.marker(p.coord, { icon: iconeLimpo }).addTo(mapaPlanta).bindPopup(`<b>${p.nome}</b>`);
-                } else {
-                    L.circleMarker(p.coord, { radius: 9, fillColor: p.cor, color: '#fff', weight: 2, fillOpacity: 0.9 }).addTo(mapaPlanta).bindPopup(`<b>${p.nome}</b>`);
-                }
-            });
+            // Marcador invisível centralizado para ancorar a janela flutuante de Áreas
             marcadorInfoGeral = L.marker([600, 900], { opacity: 0 }).addTo(mapaPlanta);
         }
 
@@ -265,10 +231,11 @@
             mudarModo('planta');
             if (tipo === 'areas') {
                 const html = `<div class="info-popup"><h3>Quadro de Áreas Oficial</h3>
-                    <p><strong>📐 Área Útil:</strong> 24.530 m²</p>
-                    <p><strong>🎪 Arena:</strong> 17.700 m²</p>
-                    <p><strong>🏗️ Estrutural:</strong> 11.573,20 m²</p>
-                    <p><strong>🗺️ Área Total:</strong> 35.903,21 m²</p></div>`;
+                    <p><strong>📐 Área Útil do Evento:</strong> 24.530 m²</p>
+                    <p><strong>🎪 Ambiente Fechado (Arena):</strong> 17.700 m²</p>
+                    <p><strong>🏗️ Área Montada Estrutural:</strong> 11.573,20 m²</p>
+                    <p><strong>🗺️ Área Total do Evento:</strong> 35.903,21 m²</p></div>`;
+                mapaPlanta.setView([600, 900], 0);
                 marcadorInfoGeral.bindPopup(html).openPopup();
             }
         }
