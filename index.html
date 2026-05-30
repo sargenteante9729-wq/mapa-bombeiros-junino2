@@ -311,69 +311,7 @@
                 }
 
                 executarPassoCarrossel();
-
-                if (itensFiltrados.length > 1) {
-                    temporizadorCarrosselPlanta = setInterval(executarPassoCarrossel, 2400);
-                }
-            }
-        }
-
-        function mudarModo(modo) {
-            const isEst = modo === 'estado';
-            document.getElementById('btn-estado').className = `btn-modo ${isEst ? 'ativo' : ''}`;
-            document.getElementById('btn-planta').className = `btn-modo ${!isEst ? 'ativo' : ''}`;
-            document.getElementById('visao-estado').style.display = isEst ? 'block' : 'none';
-            document.getElementById('visao-planta').style.display = !isEst ? 'block' : 'none';
-            document.getElementById('mapa-estado').style.display = isEst ? 'block' : 'none';
-            document.getElementById('mapa-planta').style.display = !isEst ? 'block' : 'none';
-            setTimeout(() => { isEst ? mapaEstado.invalidateSize() : mapaPlanta.invalidateSize(); }, 50);
-        }
-
-        function mostrarInfoGeralPlanta(tipo) {
-            mudarModo('planta');
-            if (tipo === 'areas') {
-                const html = `<div class="info-popup"><h3>Quadro de Áreas Oficial</h3>
-                    <p><strong>📐 Área Útil do Evento:</strong> 24.530 m²</p>
-                    <p><strong>🎪 Ambiente Fechado (Arena):</strong> 17.700 m²</p>
-                    <p><strong>🏗️ Área Montada Estrutural:</strong> 11.573,20 m²</p>
-                    <p><strong>🗺️ Área Total do Evento:</strong> 35.903,21 m²</p></div>`;
-                mapaPlanta.setView([hImagem - 780, 650], 0);
-                marcadorInfoGeral.bindPopup(html).openPopup();
-            }
-        }
-
-        function gerarHTMLPopup(cidade, dist = '', tempo = '') {
-            let telem = dist && tempo ? `<p style="color:#e65100; background:#ffe0b2; padding:4px; border-radius:3px; text-align:center;"><b>⏱️ Resposta: ${tempo} (${dist})</b></p>` : '';
-            return `<div class="info-popup"><h3>${cidade.nome}</h3>${telem}
-                <p><strong>⚠️ Risco:</strong> ${cidade.risco || '-'}</p>
-                <p><strong>👨‍🚒 Efetivo:</strong> ${cidade.efetivo || '-'}</p>
-                <p><strong>🚒 ABTs:</strong> ${cidade.abts || '-'}</p>
-                <p><strong>🚑 URs:</strong> ${cidade.ur || '-'}</p>
-                <hr><p><strong>⭐ Principal:</strong> ${cidade.eventos_principais || '-'}</p></div>`;
-        }
-
-        function limparRotaAnterior() {
-            if (timerEstado) clearInterval(timerEstado);
-            if (rotaEstadoLinha) mapaEstado.removeLayer(rotaEstadoLinha);
-            if (vtrEstadoMarcador) mapaEstado.removeLayer(vtrEstadoMarcador);
-            document.getElementById('painel-telemetria').style.display = 'none';
-        }
-
-        function gerarRotaEstadual(lat, lon, classe, city) {
-            limparRotaAnterior();
-            const url = `https://router.project-osrm.org/route/v1/driving/${LON_QUARTEL},${LAT_QUARTEL};${lon},${lat}?overview=full&geometries=geojson`;
-            
-            fetch(url)
-                .then(r => r.json())
-                .then(data => {
-                    if(!data.routes || !data.routes[0]) return;
-                    const dist = (data.routes[0].distance / 1000).toFixed(1) + ' km';
-                    const dur = Math.round(data.routes[0].duration / 60) + ' min';
-                    
-                    document.getElementById('tel-nome').innerText = city.nome;
-                    document.getElementById('tel-distancia').innerText = dist;
-                    document.getElementById('tel-tempo').innerText = dur;
-                    document.getElementById('painel-telemetria').style.display = 'block';
+  document.getElementById('painel-telemetria').style.display = 'block';
 
                     const coords = data.routes[0].geometry.coordinates.map(p => [p[1], p[0]]);
                     rotaEstadoLinha = L.polyline(coords, {color: '#d32f2f', weight: 4}).addTo(mapaEstado);
