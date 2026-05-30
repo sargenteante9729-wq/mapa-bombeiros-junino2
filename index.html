@@ -134,6 +134,15 @@
             <ul class="lista-dados">
                 <li onclick="mostrarInfoGeralPlanta('areas')"><span class="status-prefixo">📊</span> Quadro de Áreas Oficial</li>
             </ul>
+
+            <div class="titulo-secao-menu">Destaques Operacionais Interativos</div>
+            <ul class="lista-dados">
+                <li onclick="interagirPlantaPorTipo('saida')"><span class="status-prefixo">🟨</span> Principais saídas de emergências</li>
+                <li onclick="interagirPlantaPorTipo('entrada')"><span class="status-prefixo">🟦</span> Entrada de público</li>
+                <li onclick="interagirPlantaPorTipo('vtr_arraia')"><span class="status-prefixo">🚒</span> Viaturas do CBMSE no Arraiá do Povo</li>
+                <li onclick="interagirPlantaPorTipo('vtr_vila')"><span class="status-prefixo">🚒</span> Viaturas do CBMSE no Vila do Forró</li>
+                <li onclick="interagirPlantaPorTipo('guarnicao')"><span class="status-prefixo">🧑‍🚒</span> Guarnições a pé no Arraiá do Povo</li>
+            </ul>
         </div>
     </div>
     
@@ -151,14 +160,16 @@
         let mapaEstado = null, mapaPlanta = null;
         let rotaEstadoLinha = null, vtrEstadoMarcador = null, timerEstado = null;
         let marcadorInfoGeral = null;
+        let temporizadorCarrosselPlanta = null;
 
-        // Ajuste das proporções baseado na imagem real
+        // Instâncias reais dos retângulos criados para permitir a abertura programática dos popups
+        let referenciasRetangulos = [];
+
         const hImagem = 1200, wImagem = 1800;
         const limitesPlanta = [[0, 0], [hImagem, wImagem]];
 
-        // DEFINIÇÃO DO BANCO DE DADOS DAS MARCAÇÕES SOLICITADAS (Coordenadas XY mapeadas sobre o plano)
         const locaisDestaquesPSCIP = [
-            // Principais Saídas de Emergências (Amarelo)
+            // Principais Saídas de Emergências
             { nome: "Saída Emergencial Oeste", coord: [650, 60], cor: "#ffeb3b", tipo: "saida" },
             { nome: "Saída Emergencial Noroeste", coord: [850, 130], cor: "#ffeb3b", tipo: "saida" },
             { nome: "Saída Emergencial Norte Central", coord: [1110, 340], cor: "#ffeb3b", tipo: "saida" },
@@ -167,16 +178,16 @@
             { nome: "Saída Emergencial Leste Central", coord: [630, 610], cor: "#ffeb3b", tipo: "saida" },
             { nome: "Saída Emergencial Sul", coord: [250, 550], cor: "#ffeb3b", tipo: "saida" },
 
-            // Entrada de Público (Azul - Mapeado exclusivamente na nova posição central indicada)
+            // Entrada de Público
             { nome: "Entrada de Público Principal (Central)", coord: [410, 395], cor: "#00b0ff", tipo: "entrada" },
 
-            // Viaturas do CBMSE (Vermelho)
-            { nome: "Viatura CBMSE - Arraiá do Povo", coord: [500, 685], cor: "#d32f2f", tipo: "vtr" },
-            { nome: "Viatura CBMSE - Vila do Forró", coord: [830, 960], cor: "#d32f2f", tipo: "vtr" },
+            // Viaturas do CBMSE por setor específico para filtragem precisa do menu
+            { nome: "Viatura CBMSE - Arraiá do Povo", coord: [500, 685], cor: "#d32f2f", tipo: "vtr_arraia" },
+            { nome: "Viatura CBMSE - Vila do Forró", coord: [830, 960], cor: "#d32f2f", tipo: "vtr_vila" },
 
-            // Guarnições a Pé (Laranja)
-            { nome: "Guarnição CBMSE - Setor Oeste", coord: [545, 290], cor: "#ff9800", tipo: "guarnicao" },
-            { nome: "Guarnição CBMSE - Setor Leste", coord: [545, 490], cor: "#ff9800", tipo: "guarnicao" }
+            // Guarnições a Pé
+            { nome: "Guarnição CBMSE - Setor Oeste (Arraiá)", coord: [545, 290], cor: "#ff9800", tipo: "guarnicao" },
+            { nome: "Guarnição CBMSE - Setor Leste (Arraiá)", coord: [545, 490], cor: "#ff9800", tipo: "guarnicao" }
         ];
 
         function cityLonFix(c) { return c.lon || c.lng || c.longit || c.longitude; }
@@ -234,33 +245,70 @@
             });
             L.control.zoom({ position: 'topright' }).addTo(mapaPlanta);
             
-            // CORREÇÃO DO NOME DO ARQUIVO DA IMAGEM ORIGINAL DA SUA PLANTA
             L.imageOverlay('PLANTA_SCIP_page-0001.jpg', limitesPlanta).addTo(mapaPlanta);
             mapaPlanta.fitBounds(limitesPlanta);
 
-            // Geração automática dos destaques por vetorização limpa (sem círculos pesados, formato retangular de realce)
+            referenciasRetangulos = [];
+
             locaisDestaquesPSCIP.forEach(p => {
                 let largura = 50, altura = 40;
-                if(p.tipo === "vtr" || p.tipo === "guarnicao") { largura = 70; altura = 50; }
+                if(p.tipo.indexOf("vtr") !== -1 || p.tipo === "guarnicao") { largura = 70; altura = 50; }
 
-                // Define as caixas de destaque translúcidas sobre as regiões correspondentes
                 let semiH = altura / 2, semiW = largura / 2;
                 let boundsPoligono = [
                     [p.coord[0] - semiH, p.coord[1] - semiW],
                     [p.coord[0] + semiH, p.coord[1] + semiW]
                 ];
 
-                L.rectangle(boundsPoligono, {
+                let retangulo = L.rectangle(boundsPoligono, {
                     color: p.cor,
                     weight: 3,
                     fillColor: p.cor,
                     fillOpacity: 0.35,
                     dashArray: p.tipo === "saida" ? "5,5" : null
                 }).addTo(mapaPlanta).bindPopup(`<b>${p.nome}</b>`);
+
+                // Guarda a referência estruturada com a coordenada central exata [Y, X]
+                referenciasRetangulos.push({ tipo: p.tipo, elemento: retangulo, centro: p.coord });
             });
 
-            // Marcador invisível centralizado para ancorar a janela flutuante de Áreas
             marcadorInfoGeral = L.marker([600, 900], { opacity: 0 }).addTo(mapaPlanta);
+        }
+
+        // FUNÇÃO DINÂMICA: Centraliza e percorre sequencialmente cada item do mesmo grupo
+        function interagirPlantaPorTipo(tipoAlvo) {
+            mudarModo('planta');
+            if (temporizadorCarrosselPlanta) clearInterval(temporizadorCarrosselPlanta);
+
+            // Filtra os elementos mapeados pertencentes ao tipo clicado
+            const itensFiltrados = referenciasRetangulos.filter(item => item.tipo === tipoAlvo);
+
+            if (itensFiltrados.length > 0) {
+                let indice = 0;
+
+                function executarPassoCarrossel() {
+                    if (indice < itensFiltrados.length) {
+                        const alvo = itensFiltrados[indice];
+                        
+                        // Move a visualização do mapa suavemente para a marcação atual
+                        mapaPlanta.panTo(alvo.centro);
+                        alvo.elemento.openPopup();
+                        
+                        indice++;
+                    } else {
+                        // Encerra o ciclo de execução quando varrer todos os pontos do grupo
+                        clearInterval(temporizadorCarrosselPlanta);
+                    }
+                }
+
+                // Dispara o primeiro elemento imediatamente
+                executarPassoCarrossel();
+
+                // Se houver múltiplos elementos (ex: saídas de emergência), ativa o temporizador para avançar
+                if (itensFiltrados.length > 1) {
+                    temporizadorCarrosselPlanta = setInterval(executarPassoCarrossel, 2200);
+                }
+            }
         }
 
         function mudarModo(modo) {
@@ -307,34 +355,38 @@
         function gerarRotaEstadual(lat, lon, classe, city) {
             limparRotaAnterior();
             const url = `https://router.project-osrm.org/route/v1/driving/${LON_QUARTEL},${LAT_QUARTEL};${lon},${lat}?overview=full&geometries=geojson`;
-            fetch(fetchUrl => fetch(url).then(r => r.json()).then(data => {
-                if(!data.routes[0]) return;
-                const dist = (data.routes[0].distance / 1000).toFixed(1) + ' km';
-                const dur = Math.round(data.routes[0].duration / 60) + ' min';
-                
-                document.getElementById('tel-nome').innerText = city.nome;
-                document.getElementById('tel-distancia').innerText = dist;
-                document.getElementById('tel-tempo').innerText = dur;
-                document.getElementById('painel-telemetria').style.display = 'block';
+            
+            // Correção definitiva da chamada fetch nativa do navegador
+            fetch(url)
+                .then(r => r.json())
+                .then(data => {
+                    if(!data.routes || !data.routes[0]) return;
+                    const dist = (data.routes[0].distance / 1000).toFixed(1) + ' km';
+                    const dur = Math.round(data.routes[0].duration / 60) + ' min';
+                    
+                    document.getElementById('tel-nome').innerText = city.nome;
+                    document.getElementById('tel-distancia').innerText = dist;
+                    document.getElementById('tel-tempo').innerText = dur;
+                    document.getElementById('painel-telemetria').style.display = 'block';
 
-                const coords = data.routes[0].geometry.coordinates.map(p => [p[1], p[0]]);
-                rotaEstadoLinha = L.polyline(coords, {color: '#d32f2f', weight: 4}).addTo(mapaEstado);
-                mapaEstado.fitBounds(rotaEstadoLinha.getBounds(), {padding: [40, 40]});
-                
-                vtrEstadoMarcador = L.marker(coords[0], { icon: L.divIcon({ html: '🚒', className: `marcador-bombeiro ${classe}`, iconSize: [34, 34] }) }).addTo(mapaEstado);
-                
-                let step = 0;
-                timerEstado = setInterval(() => {
-                    if (step >= coords.length - 1) {
-                        clearInterval(timerEstado);
-                        vtrEstadoMarcador.bindPopup(gerarHTMLPopup(city, dist, dur)).openPopup();
-                    } else {
-                        vtrEstadoMarcador.setLatLng(coords[step]);
-                        step += Math.max(1, Math.floor(coords.length/50));
-                        if(step >= coords.length) step = coords.length-1;
-                    }
-                }, 40);
-            }));
+                    const coords = data.routes[0].geometry.coordinates.map(p => [p[1], p[0]]);
+                    rotaEstadoLinha = L.polyline(coords, {color: '#d32f2f', weight: 4}).addTo(mapaEstado);
+                    mapaEstado.fitBounds(rotaEstadoLinha.getBounds(), {padding: [40, 40]});
+                    
+                    vtrEstadoMarcador = L.marker(coords[0], { icon: L.divIcon({ html: '🚒', className: `marcador-bombeiro ${classe}`, iconSize: [34, 34] }) }).addTo(mapaEstado);
+                    
+                    let step = 0;
+                    timerEstado = setInterval(() => {
+                        if (step >= coords.length - 1) {
+                            clearInterval(timerEstado);
+                            vtrEstadoMarcador.bindPopup(gerarHTMLPopup(city, dist, dur)).openPopup();
+                        } else {
+                            vtrEstadoMarcador.setLatLng(coords[step]);
+                            step += Math.max(1, Math.floor(coords.length/50));
+                            if(step >= coords.length) step = coords.length-1;
+                        }
+                    }, 40);
+                }).catch(err => console.error("Erro na requisição OSRM: ", err));
         }
 
         window.onload = () => { inicializarMapaEstado(); inicializarMapaPlanta(); };
