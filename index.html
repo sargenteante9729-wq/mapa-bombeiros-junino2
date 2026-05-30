@@ -164,34 +164,34 @@
 
         let referenciasRetangulos = [];
 
-        // Novas dimensões ampliadas da imagem [Largura X, Altura Y]
-        const wImagem = 2350, hImagem = 1662;
+        // Novas dimensões reduzidas da imagem [Largura X, Altura Y]
+        const wImagem = 2000, hImagem = 1414; // Mantendo a proporção exata da planta sobre base de 2000px
         const limitesPlanta = [[0, 0], [hImagem, wImagem]];
 
-        // COORDENADAS RECALIBRADAS COM PRECISÃO PARA A ESCALA 2350 x 1662 [Y_Pixel_Original, X_Pixel_Original]
+        // COORDENADAS RECALIBRADAS PROPORCIONALMENTE PARA A NOVA ESCALA DE 2000px [Y_Pixel, X_Pixel]
         const locaisDestaquesPSCIP = [
             // Principais Saídas de Emergências (Amarelo)
-            { nome: "Saída Emergencial Oeste", coord: [734, 53], cor: "#ffeb3b", tipo: "saida" },
-            { nome: "Saída Emergencial Noroeste (Próx. Vtr)", coord: [362, 142], cor: "#ffeb3b", tipo: "saida" },
-            { nome: "Saída Emergencial Superior Esquerda", coord: [136, 342], cor: "#ffeb3b", tipo: "saida" },
-            { nome: "Saída Emergencial Central Superior", coord: [320, 541], cor: "#ffeb3b", tipo: "saida" },
-            { nome: "Saída Emergencial Superior Direita", coord: [138, 712], cor: "#ffeb3b", tipo: "saida" },
-            { nome: "Saída Emergencial Centro Direita", coord: [436, 614], cor: "#ffeb3b", tipo: "saida" },
-            { nome: "Saída Emergencial Inferior Direita", coord: [608, 624], cor: "#ffeb3b", tipo: "saida" },
-            { nome: "Saída Emergencial Inferior Central", coord: [710, 541], cor: "#ffeb3b", tipo: "saida" },
+            { nome: "Saída Emergencial Oeste", coord: [625, 45], cor: "#ffeb3b", tipo: "saida" },
+            { nome: "Saída Emergencial Noroeste (Próx. Vtr)", coord: [308, 121], cor: "#ffeb3b", tipo: "saida" },
+            { nome: "Saída Emergencial Superior Esquerda", coord: [116, 291], cor: "#ffeb3b", tipo: "saida" },
+            { nome: "Saída Emergencial Central Superior", coord: [272, 460], cor: "#ffeb3b", tipo: "saida" },
+            { nome: "Saída Emergencial Superior Direita", coord: [117, 606], cor: "#ffeb3b", tipo: "saida" },
+            { nome: "Saída Emergencial Centro Direita", coord: [371, 523], cor: "#ffeb3b", tipo: "saida" },
+            { nome: "Saída Emergencial Inferior Direita", coord: [517, 531], cor: "#ffeb3b", tipo: "saida" },
+            { nome: "Saída Emergencial Inferior Central", coord: [604, 460], cor: "#ffeb3b", tipo: "saida" },
 
             // Entradas de Público (Azul)
-            { nome: "Entrada de Público Principal (Bilheteria)", coord: [174, 881], cor: "#00b0ff", tipo: "entrada" },
-            { nome: "Entrada de Público Central Arena", coord: [442, 429], cor: "#00b0ff", tipo: "entrada" },
-            { nome: "Entrada de Público Inferior Arena", coord: [646, 391], cor: "#00b0ff", tipo: "entrada" },
+            { nome: "Entrada de Público Principal (Bilheteria)", coord: [148, 750], cor: "#00b0ff", tipo: "entrada" },
+            { nome: "Entrada de Público Central Arena", coord: [376, 365], cor: "#00b0ff", tipo: "entrada" },
+            { nome: "Entrada de Público Inferior Arena", coord: [550, 333], cor: "#00b0ff", tipo: "entrada" },
 
             // Viaturas do CBMSE (Vermelho)
-            { nome: "Viatura CBMSE - Arraiá do Povo", coord: [506, 683], cor: "#d32f2f", tipo: "vtr_arraia" },
-            { nome: "Viatura CBMSE - Vila do Forró", coord: [334, 957], cor: "#d32f2f", tipo: "vtr_vila" },
+            { nome: "Viatura CBMSE - Arraiá do Povo", coord: [431, 581], cor: "#d32f2f", tipo: "vtr_arraia" },
+            { nome: "Viatura CBMSE - Vila do Forró", coord: [284, 814], cor: "#d32f2f", tipo: "vtr_vila" },
 
             // Guarnições a Pé (Laranja)
-            { nome: "Guarnição CBMSE - Setor Oeste", coord: [552, 290], cor: "#ff9800", tipo: "guarnicao" },
-            { nome: "Guarnição CBMSE - Setor Leste", coord: [552, 490], cor: "#ff9800", tipo: "guarnicao" }
+            { nome: "Guarnição CBMSE - Setor Oeste", coord: [470, 247], cor: "#ff9800", tipo: "guarnicao" },
+            { nome: "Guarnição CBMSE - Setor Leste", coord: [470, 417], cor: "#ff9800", tipo: "guarnicao" }
         ];
 
         function cityLonFix(c) { return c.lon || c.lng || c.longit || c.longitude; }
@@ -259,15 +259,15 @@
             referenciasRetangulos = [];
 
             locaisDestaquesPSCIP.forEach(p => {
-                // Dimensionamento dinâmico proporcional das caixas de destaque
-                let largura = 75, altura = 55;
-                if(p.tipo.indexOf("vtr") !== -1) { largura = 110; altura = 70; }
-                if(p.tipo === "guarnicao") { largura = 140; altura = 100; }
-                if(p.nome.indexOf("Bilheteria") !== -1) { largura = 160; altura = 160; }
+                // Caixas redimensionadas para o novo tamanho menor de tela
+                let largura = 64, altura = 46;
+                if(p.tipo.indexOf("vtr") !== -1) { largura = 94, altura = 60; }
+                if(p.tipo === "guarnicao") { largura = 120, altura = 85; }
+                if(p.nome.indexOf("Bilheteria") !== -1) { largura = 136, altura = 136; }
 
                 let semiH = altura / 2, semiW = largura / 2;
                 
-                // Conversão do sistema de pixels do monitor para o plano cartesiano do Leaflet Simple
+                // Correção do plano cartesiano invertido do Leaflet Simple [Inversão do eixo Y]
                 let yCorrigido = hImagem - p.coord[0];
                 let xCorrigido = p.coord[1];
 
@@ -281,13 +281,13 @@
                     weight: 3,
                     fillColor: p.cor,
                     fillOpacity: 0.4,
-                    dashArray: p.tipo === "saida" ? "6,6" : null
+                    dashArray: p.tipo === "saida" ? "5,5" : null
                 }).addTo(mapaPlanta).bindPopup(`<b>${p.nome}</b>`);
 
                 referenciasRetangulos.push({ tipo: p.tipo, elemento: retangulo, centro: [yCorrigido, xCorrigido] });
             });
 
-            marcadorInfoGeral = L.marker([hImagem - 920, 770], { opacity: 0 }).addTo(mapaPlanta);
+            marcadorInfoGeral = L.marker([hImagem - 780, 650], { opacity: 0 }).addTo(mapaPlanta);
         }
 
         function interagirPlantaPorTipo(tipoAlvo) {
@@ -337,7 +337,7 @@
                     <p><strong>🎪 Ambiente Fechado (Arena):</strong> 17.700 m²</p>
                     <p><strong>🏗️ Área Montada Estrutural:</strong> 11.573,20 m²</p>
                     <p><strong>🗺️ Área Total do Evento:</strong> 35.903,21 m²</p></div>`;
-                mapaPlanta.setView([hImagem - 920, 770], 0);
+                mapaPlanta.setView([hImagem - 780, 650], 0);
                 marcadorInfoGeral.bindPopup(html).openPopup();
             }
         }
