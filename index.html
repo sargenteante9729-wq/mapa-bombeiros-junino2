@@ -17,12 +17,41 @@
             background-color: #f4f4f9; 
         }
 
-        body { display: flex; }
+        body { 
+            display: flex; 
+            flex-direction: row; 
+            position: relative;
+        }
         
+        /* BOTÃO HAMBÚRGUER (SÓ APARECE NO MOBILE) */
+        #btn-menu-mobile {
+            display: none;
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            z-index: 2000;
+            background: #d32f2f;
+            color: white;
+            border: none;
+            padding: 12px 16px;
+            font-size: 1.1rem;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* MENU LATERAL - ESTRUTURA DO DESKTOP */
         #menu-lateral { 
-            width: 350px; height: 100vh; background: #ffffff; 
-            display: flex; flex-direction: column; z-index: 1000;
-            box-shadow: 2px 0 8px rgba(0,0,0,0.15); flex-shrink: 0;
+            width: 350px; 
+            height: 100vh; 
+            background: #ffffff; 
+            display: flex; 
+            flex-direction: column; 
+            z-index: 1500;
+            box-shadow: 2px 0 8px rgba(0,0,0,0.15); 
+            flex-shrink: 0;
+            transition: transform 0.3s ease;
         }
         
         #menu-lateral h2 { 
@@ -36,19 +65,19 @@
             border-bottom: 1px solid #e0e0e0; display: flex; gap: 5px;
         }
         .btn-modo {
-            flex: 1; padding: 8px; border: none; border-radius: 4px;
+            flex: 1; padding: 10px 8px; border: none; border-radius: 4px;
             font-weight: bold; cursor: pointer; font-size: 0.8rem;
             transition: all 0.2s; background: #e0e0e0; color: #444;
         }
         .btn-modo.ativo { background: #b71c1c; color: white; }
 
-        /* DASHBOARD */
+        /* DASHBOARD TOTAIS */
         #dashboard-totais {
             display: grid; grid-template-columns: repeat(2, 1fr);
             gap: 6px; padding: 10px; background: #fafafa;
         }
         .quadro-total {
-            background: white; padding: 6px; border-radius: 4px;
+            background: white; padding: 8px 6px; border-radius: 4px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.05); text-align: center;
             border-left: 3px solid #d32f2f;
         }
@@ -61,29 +90,34 @@
             border: 1px solid #ffe0b2; border-radius: 4px; display: none;
             box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
         }
-        #painel-telemetria p { margin: 3px 0; font-size: 0.8rem; color: #e65100; font-weight: bold; }
+        #painel-telemetria p { margin: 4px 0; font-size: 0.8rem; color: #e65100; font-weight: bold; }
         
-        /* LISTAS */
+        /* LISTAS INTERATIVAS */
         .conteiner-lista { flex-grow: 1; overflow-y: auto; }
         .titulo-secao-menu {
             background: #eeeeee; color: #333; font-size: 0.75rem;
-            font-weight: bold; padding: 6px 15px; text-transform: uppercase;
+            font-weight: bold; padding: 8px 15px; text-transform: uppercase;
             letter-spacing: 0.5px; border-bottom: 1px solid #ddd;
         }
         ul.lista-dados { list-style-type: none; padding: 0; margin: 0; }
         ul.lista-dados li { 
-            padding: 12px 15px; border-bottom: 1px solid #eee; 
+            padding: 14px 15px; border-bottom: 1px solid #eee; 
             cursor: pointer; font-weight: bold; color: #333;
             display: flex; align-items: center; font-size: 0.9rem;
         }
         ul.lista-dados li:hover { background-color: #ffebee; }
-        .status-prefixo { margin-right: 10px; font-size: 1rem; }
+        .status-prefixo { margin-right: 12px; font-size: 1.1rem; }
         
-        /* MAPAS */
-        #area-mapas { flex-grow: 1; height: 100vh; position: relative; background: #e5e9f0; }
+        /* ÁREA DE MAPAS - COLA AO LADO DO MENU */
+        #area-mapas { 
+            flex-grow: 1; 
+            height: 100vh; 
+            position: relative; 
+            background: #e5e9f0; 
+        }
         .mapa-janela { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
         
-        /* MARCADORES (MAPA ESTADUAL) */
+        /* MARCADORES E POPUPS */
         .marcador-bombeiro {
             font-size: 18px; text-align: center;
             width: 36px !important; height: 36px !important;
@@ -96,12 +130,42 @@
         .risco-baixo { border: 3px solid #388e3c; }
         .risco-padrao { border: 3px solid #9e9e9e; }
         
-        .info-popup { min-width: 280px; font-size: 13px; color: #333; }
+        .info-popup { min-width: 240px; max-width: 280px; font-size: 13px; color: #333; }
         .info-popup h3 { margin: 0 0 8px 0; color: #d32f2f; font-size: 16px; border-bottom: 2px solid #d32f2f; padding-bottom: 4px; }
         .info-popup p { margin: 5px 0; line-height: 1.4; }
+
+        /* REGRAS CRÍTICAS PARA MOBILE */
+        @media (max-width: 768px) {
+            #btn-menu-mobile { display: block; } /* Mostra o botão ☰ */
+
+            #menu-lateral {
+                position: absolute;
+                top: 0; 
+                left: 0;
+                width: 290px;
+                height: 100vh;
+                transform: translateX(-100%); /* Esconde para fora da tela */
+            }
+            
+            #menu-lateral.aberto {
+                transform: translateX(0); /* Desliza para dentro da tela */
+            }
+
+            /* No mobile o mapa ocupa 100% da largura de fundo */
+            #area-mapas {
+                width: 100% !important;
+                position: absolute;
+                top: 0; left: 0;
+                z-index: 1;
+            }
+
+            .leaflet-top.leaflet-right { top: 65px !important; } /* Afasta o zoom para não conflitar */
+        }
     </style>
 </head>
 <body>
+
+    <button id="btn-menu-mobile" onclick="alternarMenuMobile()">☰ Menu</button>
 
     <div id="menu-lateral">
         <h2>Painel de Operações - Juninas</h2>
@@ -164,13 +228,11 @@
 
         let referenciasRetangulos = [];
 
-        // Novas dimensões reduzidas da imagem [Largura X, Altura Y]
-        const wImagem = 2000, hImagem = 1414; // Mantendo a proporção exata da planta sobre base de 2000px
+        // Base corrigida da planta para 2000px
+        const wImagem = 2000, hImagem = 1414;
         const limitesPlanta = [[0, 0], [hImagem, wImagem]];
 
-        // COORDENADAS RECALIBRADAS PROPORCIONALMENTE PARA A NOVA ESCALA DE 2000px [Y_Pixel, X_Pixel]
         const locaisDestaquesPSCIP = [
-            // Principais Saídas de Emergências (Amarelo)
             { nome: "Saída Emergencial Oeste", coord: [625, 45], cor: "#ffeb3b", tipo: "saida" },
             { nome: "Saída Emergencial Noroeste (Próx. Vtr)", coord: [308, 121], cor: "#ffeb3b", tipo: "saida" },
             { nome: "Saída Emergencial Superior Esquerda", coord: [116, 291], cor: "#ffeb3b", tipo: "saida" },
@@ -180,19 +242,35 @@
             { nome: "Saída Emergencial Inferior Direita", coord: [517, 531], cor: "#ffeb3b", tipo: "saida" },
             { nome: "Saída Emergencial Inferior Central", coord: [604, 460], cor: "#ffeb3b", tipo: "saida" },
 
-            // Entradas de Público (Azul)
             { nome: "Entrada de Público Principal (Bilheteria)", coord: [148, 750], cor: "#00b0ff", tipo: "entrada" },
             { nome: "Entrada de Público Central Arena", coord: [376, 365], cor: "#00b0ff", tipo: "entrada" },
             { nome: "Entrada de Público Inferior Arena", coord: [550, 333], cor: "#00b0ff", tipo: "entrada" },
 
-            // Viaturas do CBMSE (Vermelho)
             { nome: "Viatura CBMSE - Arraiá do Povo", coord: [431, 581], cor: "#d32f2f", tipo: "vtr_arraia" },
             { nome: "Viatura CBMSE - Vila do Forró", coord: [284, 814], cor: "#d32f2f", tipo: "vtr_vila" },
 
-            // Guarnições a Pé (Laranja)
             { nome: "Guarnição CBMSE - Setor Oeste", coord: [470, 247], cor: "#ff9800", tipo: "guarnicao" },
             { nome: "Guarnição CBMSE - Setor Leste", coord: [470, 417], cor: "#ff9800", tipo: "guarnicao" }
         ];
+
+        function fecharMenuMobile() {
+            if (window.innerWidth <= 768) {
+                document.getElementById('menu-lateral').classList.remove('aberto');
+                document.getElementById('btn-menu-mobile').innerText = "<b>☰ Menu</b>";
+            }
+        }
+
+        function alternarMenuMobile() {
+            const menu = document.getElementById('menu-lateral');
+            const botao = document.getElementById('btn-menu-mobile');
+            if (menu.classList.contains('aberto')) {
+                menu.classList.remove('aberto');
+                botao.innerHTML = "<b>☰ Menu</b>";
+            } else {
+                menu.classList.add('aberto');
+                botao.innerHTML = "<b>✕ Fechar</b>";
+            }
+        }
 
         function cityLonFix(c) { return c.lon || c.lng || c.longit || c.longitude; }
 
@@ -219,7 +297,11 @@
 
                     const li = document.createElement('li');
                     li.innerHTML = `<span class="status-prefixo">${ind}</span> ${cidade.nome}`;
-                    li.onclick = () => { mudarModo('estado'); gerarRotaEstadual(cLat, cLon, classeRisco, cidade); };
+                    li.onclick = () => { 
+                        mudarModo('estado'); 
+                        gerarRotaEstadual(cLat, cLon, classeRisco, cidade);
+                        fecharMenuMobile(); 
+                    };
                     listaUl.appendChild(li);
 
                     L.marker([cLat, cLon], {
@@ -259,15 +341,12 @@
             referenciasRetangulos = [];
 
             locaisDestaquesPSCIP.forEach(p => {
-                // Caixas redimensionadas para o novo tamanho menor de tela
                 let largura = 64, altura = 46;
                 if(p.tipo.indexOf("vtr") !== -1) { largura = 94, altura = 60; }
                 if(p.tipo === "guarnicao") { largura = 120, altura = 85; }
                 if(p.nome.indexOf("Bilheteria") !== -1) { largura = 136, altura = 136; }
 
                 let semiH = altura / 2, semiW = largura / 2;
-                
-                // Correção do plano cartesiano invertido do Leaflet Simple [Inversão do eixo Y]
                 let yCorrigido = hImagem - p.coord[0];
                 let xCorrigido = p.coord[1];
 
@@ -292,6 +371,7 @@
 
         function interagirPlantaPorTipo(tipoAlvo) {
             mudarModo('planta');
+            fecharMenuMobile(); 
             if (temporizadorCarrosselPlanta) clearInterval(temporizadorCarrosselPlanta);
 
             const itensFiltrados = referenciasRetangulos.filter(item => item.tipo === tipoAlvo);
@@ -311,7 +391,75 @@
                 }
 
                 executarPassoCarrossel();
-  document.getElementById('painel-telemetria').style.display = 'block';
+
+                if (itensFiltrados.length > 1) {
+                    temporizadorCarrosselPlanta = setInterval(executarPassoCarrossel, 2600);
+                }
+            }
+        }
+
+        function mudarModo(modo) {
+            const isEst = modo === 'estado';
+            document.getElementById('btn-estado').className = `btn-modo ${isEst ? 'ativo' : ''}`;
+            document.getElementById('btn-planta').className = `btn-modo ${!isEst ? 'ativo' : ''}`;
+            document.getElementById('visao-estado').style.display = isEst ? 'block' : 'none';
+            document.getElementById('visao-planta').style.display = !isEst ? 'block' : 'none';
+            document.getElementById('mapa-estado').style.display = isEst ? 'block' : 'none';
+            document.getElementById('mapa-planta').style.display = !isEst ? 'block' : 'none';
+            
+            // Força o Leaflet a recontar o espaço disponível imediatamente para prevenir mapas cinzas
+            setTimeout(() => { 
+                if(isEst && mapaEstado) { mapaEstado.invalidateSize(); } 
+                if(!isEst && mapaPlanta) { mapaPlanta.invalidateSize(); } 
+            }, 100);
+        }
+
+        function mostrarInfoGeralPlanta(tipo) {
+            mudarModo('planta');
+            fecharMenuMobile();
+            if (tipo === 'areas') {
+                const html = `<div class="info-popup"><h3>Quadro de Áreas Oficial</h3>
+                    <p><strong>📐 Área Útil do Evento:</strong> 24.530 m²</p>
+                    <p><strong>🎪 Ambiente Fechado (Arena):</strong> 17.700 m²</p>
+                    <p><strong>🏗️ Área Montada Estrutural:</strong> 11.573,20 m²</p>
+                    <p><strong>🗺️ Área Total do Evento:</strong> 35.903,21 m²</p></div>`;
+                mapaPlanta.setView([hImagem - 780, 650], 0);
+                marcadorInfoGeral.bindPopup(html).openPopup();
+            }
+        }
+
+        function gerarHTMLPopup(cidade, dist = '', tempo = '') {
+            let telem = dist && tempo ? `<p style="color:#e65100; background:#ffe0b2; padding:4px; border-radius:3px; text-align:center;"><b>⏱️ Resposta: ${tempo} (${dist})</b></p>` : '';
+            return `<div class="info-popup"><h3>${cidade.nome}</h3>${telem}
+                <p><strong>⚠️ Risco:</strong> ${cidade.risco || '-'}</p>
+                <p><strong>👨‍🚒 Efetivo:</strong> ${cidade.efetivo || '-'}</p>
+                <p><strong>🚒 ABTs:</strong> ${cidade.abts || '-'}</p>
+                <p><strong>🚑 URs:</strong> ${cidade.ur || '-'}</p>
+                <hr><p><strong>⭐ Principal:</strong> ${cidade.eventos_principais || '-'}</p></div>`;
+        }
+
+        function limparRotaAnterior() {
+            if (timerEstado) clearInterval(timerEstado);
+            if (rotaEstadoLinha) mapaEstado.removeLayer(rotaEstadoLinha);
+            if (vtrEstadoMarcador) mapaEstado.removeLayer(vtrEstadoMarcador);
+            document.getElementById('painel-telemetria').style.display = 'none';
+        }
+
+        function gerarRotaEstadual(lat, lon, classe, city) {
+            limparRotaAnterior();
+            const url = `https://router.project-osrm.org/route/v1/driving/${LON_QUARTEL},${LAT_QUARTEL};${lon},${lat}?overview=full&geometries=geojson`;
+            
+            fetch(url)
+                .then(r => r.json())
+                .then(data => {
+                    if(!data.routes || !data.routes[0]) return;
+                    const dist = (data.routes[0].distance / 1000).toFixed(1) + ' km';
+                    const dur = Math.round(data.routes[0].duration / 60) + ' min';
+                    
+                    document.getElementById('tel-nome').innerText = city.nome;
+                    document.getElementById('tel-distancia').innerText = dist;
+                    document.getElementById('tel-tempo').innerText = dur;
+                    document.getElementById('painel-telemetria').style.display = 'block';
 
                     const coords = data.routes[0].geometry.coordinates.map(p => [p[1], p[0]]);
                     rotaEstadoLinha = L.polyline(coords, {color: '#d32f2f', weight: 4}).addTo(mapaEstado);
@@ -333,7 +481,10 @@
                 }).catch(err => console.error("Erro na requisição OSRM: ", err));
         }
 
-        window.onload = () => { inicializarMapaEstado(); inicializarMapaPlanta(); };
+        window.onload = () => { 
+            inicializarMapaEstado(); 
+            inicializarMapaPlanta(); 
+        };
     </script>
 </body>
 </html>
