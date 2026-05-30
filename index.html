@@ -74,15 +74,16 @@
         ul.lista-dados li { 
             padding: 12px 15px; border-bottom: 1px solid #eee; 
             cursor: pointer; font-weight: bold; color: #333;
-            display: flex; align-items: center; font-size: 0.8rem;
+            display: flex; align-items: center; font-size: 0.9rem;
         }
         ul.lista-dados li:hover { background-color: #ffebee; }
-        .status-prefixo { margin-right: 10px; font-size: 1.1rem; }
+        .status-prefixo { margin-right: 10px; font-size: 1rem; }
         
         /* MAPAS */
         #area-mapas { flex-grow: 1; height: 100vh; position: relative; background: #e5e9f0; }
         .mapa-janela { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
         
+        /* MARCADORES (MAPA ESTADUAL) */
         .marcador-bombeiro {
             font-size: 18px; text-align: center;
             width: 36px !important; height: 36px !important;
@@ -91,11 +92,13 @@
             display: flex; align-items: center; justify-content: center;
         }
         .risco-alto { border: 3px solid #d32f2f; }
+        .risco-medio { border: 3px solid #fbc02d; }
+        .risco-baixo { border: 3px solid #388e3c; }
         .risco-padrao { border: 3px solid #9e9e9e; }
         
-        .info-popup { min-width: 260px; font-size: 13px; color: #333; }
-        .info-popup h3 { margin: 0 0 8px 0; color: #d32f2f; font-size: 15px; border-bottom: 2px solid #d32f2f; padding-bottom: 4px; }
-        .info-popup p { margin: 4px 0; line-height: 1.4; }
+        .info-popup { min-width: 280px; font-size: 13px; color: #333; }
+        .info-popup h3 { margin: 0 0 8px 0; color: #d32f2f; font-size: 16px; border-bottom: 2px solid #d32f2f; padding-bottom: 4px; }
+        .info-popup p { margin: 5px 0; line-height: 1.4; }
     </style>
 </head>
 <body>
@@ -131,15 +134,6 @@
             <ul class="lista-dados">
                 <li onclick="mostrarInfoGeralPlanta('areas')"><span class="status-prefixo">📊</span> Quadro de Áreas Oficial</li>
             </ul>
-
-            <div class="titulo-secao-menu">Destaques Operacionais</div>
-            <ul class="lista-dados">
-                <li onclick="interagirPlanta('saidas')"><span class="status-prefixo">🟨</span> Principais saídas de emergências</li>
-                <li onclick="interagirPlanta('entrada')"><span class="status-prefixo">🟦</span> Entrada de público</li>
-                <li onclick="interagirPlanta('vtr_arraia')"><span class="status-prefixo">🚒</span> Viaturas CBMSE - Arraiá do Povo</li>
-                <li onclick="interagirPlanta('vtr_vila')"><span class="status-prefixo">🚒</span> Viaturas CBMSE - Vila do Forró</li>
-                <li onclick="interagirPlanta('guarnicao')"><span class="status-prefixo">🧑‍🚒</span> Guarnições a pé - Arraiá do Povo</li>
-            </ul>
         </div>
     </div>
     
@@ -156,12 +150,34 @@
 
         let mapaEstado = null, mapaPlanta = null;
         let rotaEstadoLinha = null, vtrEstadoMarcador = null, timerEstado = null;
-        
-        // Objeto para armazenar os pontos de interesse na planta para interação
-        let pontosPSCIP = {};
+        let marcadorInfoGeral = null;
 
+        // Ajuste das proporções baseado na imagem real
         const hImagem = 1200, wImagem = 1800;
         const limitesPlanta = [[0, 0], [hImagem, wImagem]];
+
+        // DEFINIÇÃO DO BANCO DE DADOS DAS MARCAÇÕES SOLICITADAS (Coordenadas XY mapeadas sobre o plano)
+        const locaisDestaquesPSCIP = [
+            // Principais Saídas de Emergências (Amarelo)
+            { nome: "Saída Emergencial Oeste", coord: [650, 60], cor: "#ffeb3b", tipo: "saida" },
+            { nome: "Saída Emergencial Noroeste", coord: [850, 130], cor: "#ffeb3b", tipo: "saida" },
+            { nome: "Saída Emergencial Norte Central", coord: [1110, 340], cor: "#ffeb3b", tipo: "saida" },
+            { nome: "Saída Emergencial Norte Vila", coord: [1110, 715], cor: "#ffeb3b", tipo: "saida" },
+            { nome: "Saída Emergencial Central", coord: [730, 550], cor: "#ffeb3b", tipo: "saida" },
+            { nome: "Saída Emergencial Leste Central", coord: [630, 610], cor: "#ffeb3b", tipo: "saida" },
+            { nome: "Saída Emergencial Sul", coord: [250, 550], cor: "#ffeb3b", tipo: "saida" },
+
+            // Entrada de Público (Azul - Mapeado exclusivamente na nova posição central indicada)
+            { nome: "Entrada de Público Principal (Central)", coord: [410, 395], cor: "#00b0ff", tipo: "entrada" },
+
+            // Viaturas do CBMSE (Vermelho)
+            { nome: "Viatura CBMSE - Arraiá do Povo", coord: [500, 685], cor: "#d32f2f", tipo: "vtr" },
+            { nome: "Viatura CBMSE - Vila do Forró", coord: [830, 960], cor: "#d32f2f", tipo: "vtr" },
+
+            // Guarnições a Pé (Laranja)
+            { nome: "Guarnição CBMSE - Setor Oeste", coord: [545, 290], cor: "#ff9800", tipo: "guarnicao" },
+            { nome: "Guarnição CBMSE - Setor Leste", coord: [545, 490], cor: "#ff9800", tipo: "guarnicao" }
+        ];
 
         function cityLonFix(c) { return c.lon || c.lng || c.longit || c.longitude; }
 
@@ -183,6 +199,8 @@
 
                     let ind = '🚒', classeRisco = 'risco-padrao';
                     if (cidade.risco === 'Alto') { ind = '🔴'; classeRisco = 'risco-alto'; }
+                    else if (cidade.risco === 'Médio') { ind = '🟡'; classeRisco = 'risco-medio'; }
+                    else if (cidade.risco === 'Baixo') { ind = '🟢'; classeRisco = 'risco-baixo'; }
 
                     const li = document.createElement('li');
                     li.innerHTML = `<span class="status-prefixo">${ind}</span> ${cidade.nome}`;
@@ -216,29 +234,33 @@
             });
             L.control.zoom({ position: 'topright' }).addTo(mapaPlanta);
             
-            // Certifique-se que o nome do arquivo abaixo é exatamente o que está na sua pasta
+            // CORREÇÃO DO NOME DO ARQUIVO DA IMAGEM ORIGINAL DA SUA PLANTA
             L.imageOverlay('PLANTA_SCIP_page-0001.jpg', limitesPlanta).addTo(mapaPlanta);
             mapaPlanta.fitBounds(limitesPlanta);
 
-            // Mapeamento dos pontos baseado na imagem fornecida (Y, X)
-            // Estes pontos servem como ancoras para os destaques interativos
-            pontosPSCIP['saidas'] = L.circleMarker([1050, 600], { radius: 1, opacity: 0 }).addTo(mapaPlanta).bindPopup("<b>Saídas de Emergência</b><br>Identificadas pelas placas verdes em todo o perímetro.");
-            pontosPSCIP['entrada'] = L.circleMarker([1080, 1630], { radius: 1, opacity: 0 }).addTo(mapaPlanta).bindPopup("<b>Entrada de Público</b><br>Acesso Principal via Vila do Forró / Estacionamento.");
-            pontosPSCIP['vtr_arraia'] = L.circleMarker([530, 800], { radius: 1, opacity: 0 }).addTo(mapaPlanta).bindPopup("<b>Viaturas - Arraiá do Povo</b><br>Posicionamento estratégico para combate e resgate no setor das barracas.");
-            pontosPSCIP['vtr_vila'] = L.circleMarker([850, 1450], { radius: 1, opacity: 0 }).addTo(mapaPlanta).bindPopup("<b>Viaturas - Vila do Forró</b><br>Apoio operacional no setor cultural e gastronômico.");
-            pontosPSCIP['guarnicao'] = L.circleMarker([550, 450], { radius: 1, opacity: 0 }).addTo(mapaPlanta).bindPopup("<b>Guarnições a Pé</b><br>Bombeiros em patrulhamento constante na Arena de Shows.");
-            
-            // Ponto central para o Quadro de Áreas
-            pontosPSCIP['areas'] = L.marker([600, 900], { opacity: 0 }).addTo(mapaPlanta);
-        }
+            // Geração automática dos destaques por vetorização limpa (sem círculos pesados, formato retangular de realce)
+            locaisDestaquesPSCIP.forEach(p => {
+                let largura = 50, altura = 40;
+                if(p.tipo === "vtr" || p.tipo === "guarnicao") { largura = 70; altura = 50; }
 
-        function interagirPlanta(tipo) {
-            mudarModo('planta');
-            const marcador = pontosPSCIP[tipo];
-            if(marcador) {
-                mapaPlanta.setView(marcador.getLatLng(), 0);
-                marcador.openPopup();
-            }
+                // Define as caixas de destaque translúcidas sobre as regiões correspondentes
+                let semiH = altura / 2, semiW = largura / 2;
+                let boundsPoligono = [
+                    [p.coord[0] - semiH, p.coord[1] - semiW],
+                    [p.coord[0] + semiH, p.coord[1] + semiW]
+                ];
+
+                L.rectangle(boundsPoligono, {
+                    color: p.cor,
+                    weight: 3,
+                    fillColor: p.cor,
+                    fillOpacity: 0.35,
+                    dashArray: p.tipo === "saida" ? "5,5" : null
+                }).addTo(mapaPlanta).bindPopup(`<b>${p.nome}</b>`);
+            });
+
+            // Marcador invisível centralizado para ancorar a janela flutuante de Áreas
+            marcadorInfoGeral = L.marker([600, 900], { opacity: 0 }).addTo(mapaPlanta);
         }
 
         function mudarModo(modo) {
@@ -260,8 +282,8 @@
                     <p><strong>🎪 Ambiente Fechado (Arena):</strong> 17.700 m²</p>
                     <p><strong>🏗️ Área Montada Estrutural:</strong> 11.573,20 m²</p>
                     <p><strong>🗺️ Área Total do Evento:</strong> 35.903,21 m²</p></div>`;
-                pontosPSCIP['areas'].bindPopup(html).openPopup();
                 mapaPlanta.setView([600, 900], 0);
+                marcadorInfoGeral.bindPopup(html).openPopup();
             }
         }
 
@@ -285,7 +307,7 @@
         function gerarRotaEstadual(lat, lon, classe, city) {
             limparRotaAnterior();
             const url = `https://router.project-osrm.org/route/v1/driving/${LON_QUARTEL},${LAT_QUARTEL};${lon},${lat}?overview=full&geometries=geojson`;
-            fetch(url).then(r => r.json()).then(data => {
+            fetch(fetchUrl => fetch(url).then(r => r.json()).then(data => {
                 if(!data.routes[0]) return;
                 const dist = (data.routes[0].distance / 1000).toFixed(1) + ' km';
                 const dur = Math.round(data.routes[0].duration / 60) + ' min';
@@ -312,7 +334,7 @@
                         if(step >= coords.length) step = coords.length-1;
                     }
                 }, 40);
-            });
+            }));
         }
 
         window.onload = () => { inicializarMapaEstado(); inicializarMapaPlanta(); };
