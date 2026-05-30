@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sistema Integrado de Comando e SCIP - CBMSE</title>
+    <title>Sistema Integrado de Comando e PSCIP - CBMSE</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
@@ -109,7 +109,7 @@
         
         <div id="seletor-modo">
             <button class="btn-modo ativo" id="btn-estado" onclick="mudarModo('estado')">🗺️ Visão Estadual</button>
-            <button class="btn-modo" id="btn-planta" onclick="mudarModo('planta')">🏢 Planta SCIP (Arraiá)</button>
+            <button class="btn-modo" id="btn-planta" onclick="mudarModo('planta')">🏢 PSCIP (Arraiá)</button>
         </div>
         
         <div id="visao-estado" class="conteiner-lista">
@@ -132,10 +132,9 @@
 
         <div id="visao-planta" class="conteiner-lista" style="display: none;">
             
-            <div class="titulo-secao-menu">Informações Gerais do SCIP</div>
+            <div class="titulo-secao-menu">Informações Gerais do PSCIP</div>
             <ul class="lista-dados">
                 <li onclick="mostrarInfoGeralPlanta('areas')"><span class="status-prefixo">📊</span> Quadro de Áreas Oficial</li>
-                <li onclick="mostrarInfoGeralPlanta('responsabilidade')"><span class="status-prefixo">📋</span> Responsabilidade Técnica</li>
             </ul>
 
             <div class="titulo-secao-menu">Pontos Críticos & Rotas</div>
@@ -163,7 +162,7 @@
         
         let rotaEstadoLinha = null, vtrEstadoMarcador = null, timerEstado = null;
         let rotaPlantaLinha = null, vtrPlantaMarcador = null, timerPlanta = null;
-        let marcadorInfoGeral = null; // Guarda o popup de informações gerais da planta
+        let marcadorInfoGeral = null;
 
         const hImagem = 1200;
         const wImagem = 1800;
@@ -263,7 +262,6 @@
                 }).addTo(mapaPlanta).bindPopup(`<b>${p.nome}</b>`);
             });
 
-            // Criar marcador invisível no centro do mapa para fixar os popups das informações gerais
             marcadorInfoGeral = L.marker([600, 900], { opacity: 0 }).addTo(mapaPlanta);
         }
 
@@ -291,7 +289,6 @@
             }
         }
 
-        /* EXIBE POPUPS CUSTOMIZADOS IGUAL ÀS CIDADES PARA AS INFORMAÇÕES GERAIS */
         function mostrarInfoGeralPlanta(tipo) {
             mudarModo('planta');
             mapaPlanta.setView([600, 900], 0);
@@ -305,13 +302,6 @@
                     '<p><strong>🎪 Ambiente Fechado (Arena):</strong> 17.700 m²</p>' +
                     '<p><strong>🏗️ Área Montada Estrutural:</strong> 11.573,20 m²</p>' +
                     '<p><strong>🗺️ Área Total do Evento:</strong> 21.052 m²</p>' +
-                '</div>';
-            } else if (tipo === 'responsabilidade') {
-                conteudoHTML = '<div class="info-popup">' +
-                    '<h3>Responsabilidade Técnica</h3>' +
-                    '<p><strong>👷 Resp. Técnica:</strong> Eng. Daniela Brandão Siqueira</p>' +
-                    '<p><strong>🔍 Finalidade:</strong> Projeto de Segurança Contra Incêndio e Pânico (SCIP)</p>' +
-                    '<p><strong>🚒 Órgão Fiscalizador:</strong> CBMSE</p>' +
                 '</div>';
             }
 
