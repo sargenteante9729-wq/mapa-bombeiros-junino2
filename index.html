@@ -136,7 +136,7 @@
 
         /* REGRAS CRÍTICAS PARA MOBILE */
         @media (max-width: 768px) {
-            #btn-menu-mobile { display: block; } /* Mostra o botão ☰ */
+            #btn-menu-mobile { display: block; }
 
             #menu-lateral {
                 position: absolute;
@@ -144,14 +144,13 @@
                 left: 0;
                 width: 290px;
                 height: 100vh;
-                transform: translateX(-100%); /* Esconde para fora da tela */
+                transform: translateX(-100%);
             }
             
             #menu-lateral.aberto {
-                transform: translateX(0); /* Desliza para dentro da tela */
+                transform: translateX(0);
             }
 
-            /* No mobile o mapa ocupa 100% da largura de fundo */
             #area-mapas {
                 width: 100% !important;
                 position: absolute;
@@ -159,13 +158,13 @@
                 z-index: 1;
             }
 
-            .leaflet-top.leaflet-right { top: 65px !important; } /* Afasta o zoom para não conflitar */
+            .leaflet-top.leaflet-right { top: 65px !important; }
         }
     </style>
 </head>
 <body>
 
-    <button id="btn-menu-mobile" onclick="alternarMenuMobile()">☰ Menu</button>
+    <button id="btn-menu-mobile" onclick="alternarMenuMobile()"><b>☰ Menu</b></button>
 
     <div id="menu-lateral">
         <h2>Painel de Operações - Juninas</h2>
@@ -226,34 +225,33 @@
         let marcadorInfoGeral = null;
         let temporizadorCarrosselPlanta = null;
 
-        let referenciasRetangulos = [];
+        let referenciasDestaques = [];
 
-        // Base corrigida da planta para 2000px
         const wImagem = 2000, hImagem = 1414;
         const limitesPlanta = [[0, 0], [hImagem, wImagem]];
 
         const locaisDestaquesPSCIP = [
-            { nome: "Saída Emergencial", coord: [620, 104], cor: "#ffeb3b", tipo: "saida" },
-            { nome: "Saída Emergencial (Próx. Vtr)", coord: [519, 275], cor: "#ffeb3b", tipo: "saida" },
-            { nome: "Saída Emergencial Superior", coord: [474, 1092], cor: "#ffeb3b", tipo: "saida" },
-            { nome: "Saída Emergencial Central", coord: [632, 1244], cor: "#ffeb3b", tipo: "saida" },
-            { nome: "Saída Emergencial", coord: [872, 1248], cor: "#ffeb3b", tipo: "saida" },
-            { nome: "Saída Emergencial", coord: [1006, 1096], cor: "#ffeb3b", tipo: "saida" },
+            { nome: "Saída Emergencial", coord: [620, 104], tipo: "saida" },
+            { nome: "Saída Emergencial (Próx. Vtr)", coord: [519, 275], tipo: "saida" },
+            { nome: "Saída Emergencial Superior", coord: [474, 1092], tipo: "saida" },
+            { nome: "Saída Emergencial Central", coord: [632, 1244], tipo: "saida" },
+            { nome: "Saída Emergencial", coord: [872, 1248], tipo: "saida" },
+            { nome: "Saída Emergencial", coord: [1006, 1096], tipo: "saida" },
             
-            { nome: "Entrada de Público Central Arena", coord: [722, 1210], cor: "#00b0ff", tipo: "entrada" },
-            { nome: "Entrada de Público Inferior Arena", coord: [382, 658], cor: "#00b0ff", tipo: "entrada" },
+            { nome: "Entrada de Público Central Arena", coord: [722, 1210], tipo: "entrada" },
+            { nome: "Entrada de Público Inferior Arena", coord: [382, 658], tipo: "entrada" },
 
-            { nome: "Viatura UR - Arraiá do Povo", coord: [544, 172], cor: "#d32f2f", tipo: "vtr_arraia" },
-            { nome: "Viatura ABT - Arraiá do Povo", coord: [716, 1314], cor: "#d32f2f", tipo: "vtr_arraia" }, // Corrigido para vtr_arraia
-            { nome: "Viatura UR - Vila do Forró", coord: [800, 1838], cor: "#d32f2f", tipo: "vtr_vila" },  // Corrigido para vtr_vila
-            { nome: "Viatura ABT - Vila do Forró", coord:[484, 1880], cor: "#d32f2f", tipo: "vtr_vila" },
+            { nome: "Viatura UR - Arraiá do Povo", coord: [544, 172], tipo: "vtr_arraia" },
+            { nome: "Viatura ABT - Arraiá do Povo", coord: [716, 1314], tipo: "vtr_arraia" }, 
+            { nome: "Viatura UR - Vila do Forró", coord: [720, 1372], tipo: "vtr_vila" },  
+            { nome: "Viatura ABT - Vila do Forró", coord: [802, 1846], tipo: "vtr_vila" },
 
-            { nome: "Guarnição CBMSE", coord: [748, 530], cor: "#ff9800", tipo: "guarnicao" },
-            { nome: "Guarnição CBMSE", coord: [832, 500], cor: "#ff9800", tipo: "guarnicao" },
-            { nome: "Guarnição CBMSE", coord: [728, 656], cor: "#ff9800", tipo: "guarnicao" },
-            { nome: "Guarnição CBMSE", coord: [848, 654], cor: "#ff9800", tipo: "guarnicao" },
-            { nome: "Guarnição CBMSE", coord: [758, 1014], cor: "#ff9800", tipo: "guarnicao" },
-            { nome: "Guarnição CBMSE", coord: [840, 956], cor: "#ff9800", tipo: "guarnicao" }
+            { nome: "Guarnição CBMSE", coord: [748, 530], tipo: "guarnicao" },
+            { nome: "Guarnição CBMSE", coord: [832, 500], tipo: "guarnicao" },
+            { nome: "Guarnição CBMSE", coord: [728, 656], tipo: "guarnicao" },
+            { nome: "Guarnição CBMSE", coord: [848, 654], tipo: "guarnicao" },
+            { nome: "Guarnição CBMSE", coord: [758, 1014], tipo: "guarnicao" },
+            { nome: "Guarnição CBMSE", coord: [840, 956], tipo: "guarnicao" }
         ];
 
         function fecharMenuMobile() {
@@ -341,56 +339,32 @@
             L.imageOverlay('PLANTA_SCIP_page-0001.jpg', limitesPlanta).addTo(mapaPlanta);
             mapaPlanta.fitBounds(limitesPlanta);
 
-            referenciasRetangulos = [];
+            referenciasDestaques = [];
 
+            // Adiciona marcadores invisíveis apenas com popups acoplados
             locaisDestaquesPSCIP.forEach(p => {
-                let largura = 64, altura = 46;
-                let estiloBorda = null;
-
-                if (p.tipo.indexOf("vtr") !== -1) { 
-                    largura = 94; altura = 60; 
-                } else if (p.tipo === "guarnicao") { 
-                    largura = 120; height = 85; 
-                } else if (p.tipo === "saida") {
-                    estiloBorda = "8, 8";
-                } else if (p.nome.indexOf("Bilheteria") !== -1) { 
-                    largura = 136; altura = 136; 
-                }
-
-                let semiH = altura / 2, semiW = largura / 2;
                 let yCorrigido = hImagem - p.coord[0];
                 let xCorrigido = p.coord[1];
 
-                let boundsPoligono = [
-                    [yCorrigido - semiH, xCorrigido - semiW],
-                    [yCorrigido + semiH, xCorrigido + semiW]
-                ];
+                let marcadorInvisivel = L.marker([yCorrigido, xCorrigido], { opacity: 0 })
+                    .addTo(mapaPlanta)
+                    .bindPopup(`
+                        <div style="text-align:center; font-family: Arial, sans-serif;">
+                            <strong style="font-size:14px; color:#333;">${p.nome}</strong><br>
+                            <span style="font-size:11px; color:#666; text-transform:uppercase;">Setor Operacional</span>
+                        </div>
+                    `);
 
-                let retangulo = L.rectangle(boundsPoligono, {
-                    color: p.cor,
-                    weight: 3,
-                    fillColor: p.cor,
-                    fillOpacity: p.tipo === "saida" ? 0.2 : 0.4,
-                    dashArray: estiloBorda
-                }).addTo(mapaPlanta).bindPopup(`
-                    <div style="text-align:center; font-family: Arial, sans-serif;">
-                        <strong style="font-size:14px; color:#333;">${p.nome}</strong><br>
-                        <span style="font-size:11px; color:#666; text-transform:uppercase;">Setor Operacional</span>
-                    </div>
-                `);
-
-                referenciasRetangulos.push({ tipo: p.tipo, elemento: retangulo, centro: [yCorrigido, xCorrigido] });
+                referenciasDestaques.push({ tipo: p.tipo, elemento: marcadorInvisivel, centro: [yCorrigido, xCorrigido] });
             });
 
             marcadorInfoGeral = L.marker([hImagem - 780, 650], { opacity: 0 }).addTo(mapaPlanta);
 
-            // Ferramenta de calibragem (Shift + Clique)
+            // Ferramenta de calibragem inteligente (Shift + Clique)
             mapaPlanta.on('click', function(e) {
                 if (e.originalEvent.shiftKey) {
                     let yPixelOriginal = Math.round(hImagem - e.latlng.lat);
                     let xPixelOriginal = Math.round(e.latlng.lng);
-                    
-                    console.log(`Ponto detectado para o código: [${yPixelOriginal}, ${xPixelOriginal}]`);
                     
                     L.popup()
                         .setLatLng(e.latlng)
@@ -413,7 +387,7 @@
             fecharMenuMobile(); 
             if (temporizadorCarrosselPlanta) clearInterval(temporizadorCarrosselPlanta);
 
-            const itensFiltrados = referenciasRetangulos.filter(item => item.tipo === tipoAlvo);
+            const itensFiltrados = referenciasDestaques.filter(item => item.tipo === tipoAlvo);
 
             if (itensFiltrados.length > 0) {
                 let indice = 0;
@@ -425,9 +399,8 @@
                         alvo.elemento.openPopup();
                         indice++;
                     } else {
-                        // Se for viatura ou guarnição e acabou a lista, para no primeiro em vez de limpar o loop abruptamente
                         if(tipoAlvo.indexOf("vtr") !== -1 || tipoAlvo === "guarnicao") {
-                            indice = 0; // Faz um loop infinito controlado se houver mais de um
+                            indice = 0; 
                             const alvo = itensFiltrados[indice];
                             mapaPlanta.panTo(alvo.centro);
                             alvo.elemento.openPopup();
@@ -440,7 +413,6 @@
 
                 executarPassoCarrossel();
 
-                // Só ativa o temporizador automático se houver múltiplos itens daquele mesmo tipo estrito
                 if (itensFiltrados.length > 1) {
                     temporizadorCarrosselPlanta = setInterval(executarPassoCarrossel, 2800);
                 }
