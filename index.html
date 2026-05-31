@@ -117,7 +117,7 @@
             background: #e5e9f0;
         }
 
-        /* CONTAINER DOS MAPAS (FLEXÍVEL DINAMICAMENTE) */
+        /* CONTAINER DOS MAPAS */
         #area-mapas { 
             flex-grow: 1;
             height: 100vh; 
@@ -125,18 +125,24 @@
         }
         .mapa-janela { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
         
-        /* CONTAINER DO STREAMING REDUZIDO (AGORA OCUPA 25% NA VISÃO ESTADUAL) */
+        /* CONTAINER DO STREAMING AJUSTADO (MANTÉM 25% DE LARGURA) */
         #area-streaming {
             width: 25%;
             height: 100vh;
-            background: #000000;
+            background: #111116; /* Fundo escuro tático abaixo do vídeo */
             border-left: 4px solid #d32f2f;
             box-sizing: border-box;
             flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start; /* Fixa o vídeo no topo da barra */
         }
+        
+        /* AJUSTE NA ALTURA: Proporção cinematográfica widescreen para não distorcer */
         #area-streaming iframe {
             width: 100%;
-            height: 100%;
+            height: auto;
+            aspect-ratio: 16 / 9; /* Mantém a altura proporcional perfeita automaticamente */
             border: none;
         }
 
@@ -182,12 +188,12 @@
 
             #area-mapas {
                 width: 100% !important;
-                height: 60vh; 
+                height: 65vh; 
             }
 
             #area-streaming {
                 width: 100% !important;
-                height: 40vh !important; 
+                height: auto !important; 
                 border-left: none;
                 border-top: 4px solid #d32f2f;
             }
@@ -459,7 +465,6 @@
             }
         }
 
-        // MUDANÇA DE MODO ATUALIZADA: Controla a exibição do vídeo dinamicamente
         function mudarModo(modo) {
             const isEst = modo === 'estado';
             document.getElementById('btn-estado').className = `btn-modo ${isEst ? 'ativo' : ''}`;
@@ -469,13 +474,8 @@
             document.getElementById('mapa-estado').style.display = isEst ? 'block' : 'none';
             document.getElementById('mapa-planta').style.display = !isEst ? 'block' : 'none';
             
-            // EXCLUSIVO: Oculta a div do streaming se estiver fora da visão estadual no desktop
-            if (window.innerWidth > 768) {
-                document.getElementById('area-streaming').style.display = isEst ? 'block' : 'none';
-            } else {
-                // No mobile, removemos barreiras para evitar quebras de altura
-                document.getElementById('area-streaming').style.display = isEst ? 'block' : 'none';
-            }
+            // Oculta/Exibe a barra lateral de streaming baseada no modo
+            document.getElementById('area-streaming').style.display = isEst ? 'flex' : 'none';
 
             setTimeout(() => { 
                 if(isEst && mapaEstado) { mapaEstado.invalidateSize(); } 
