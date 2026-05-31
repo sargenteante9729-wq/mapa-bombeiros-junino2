@@ -275,7 +275,7 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="dados.js?v=1.0.7"></script>
+    <script src="dados.js?v=1.0.8"></script>
 
     <script>
         const LAT_QUARTEL = -10.9126, LON_QUARTEL = -37.0543; 
@@ -308,7 +308,7 @@
             { nome: "Viatura ABT - Vila do Forró", coord: [488, 1928], tipo: "vtr_vila" },
 
             { nome: "Guarnição CBMSE", coord: [748, 530], tipo: "guarnicao" },
-            { nome: "Guarnição CBMSE", coord: [832, 500], tipo: "guarnicao" },
+            { nome: "Guarnição CBMSE", coord: [832, 500], font_size: "18px", tipo: "guarnicao" },
             { nome: "Guarnição CBMSE", coord: [728, 656], tipo: "guarnicao" },
             { nome: "Guarnição CBMSE", coord: [848, 654], tipo: "guarnicao" },
             { nome: "Guarnição CBMSE", coord: [758, 1014], tipo: "guarnicao" },
@@ -453,7 +453,7 @@
                     indicesNavegacaoManual[tipoAlvo] = 0;
                 }
 
-                function executarPassoCarrossel() {
+                function executingStep() {
                     let indiceAtual = indicesNavegacaoManual[tipoAlvo];
                     const alvo = itensFiltrados[indiceAtual];
                     
@@ -463,10 +463,10 @@
                     indicesNavegacaoManual[tipoAlvo] = (indiceAtual + 1) % itensFiltrados.length;
                 }
 
-                executarPassoCarrossel();
+                executingStep();
 
                 if (itensFiltrados.length > 1) {
-                    temporizadorCarrosselPlanta = setInterval(executarPassoCarrossel, 2600);
+                    temporizadorCarrosselPlanta = setInterval(executingStep, 2600);
                 }
             }
         }
@@ -547,6 +547,10 @@
             }).addTo(mapaEstado);
             
             let step = 0;
+            // VELOCIDADE EQUILIBRADA E SUAVE: O passo agora calcula uma taxa fixa proporcional para durar exatamente o tempo ideal
+            const framesTotais = 45; // Número fixo de atualizações para a viagem ser visível e elegante
+            const incrementoConstante = Math.max(1, Math.ceil(coords.length / framesTotais));
+
             timerEstado = setInterval(() => {
                 if (step >= coords.length - 1) {
                     clearInterval(timerEstado);
@@ -554,13 +558,12 @@
                     vtrEstadoMarcador.bindPopup(gerarHTMLPopup(city, dist, dur)).openPopup();
                 } else {
                     vtrEstadoMarcador.setLatLng(coords[step]);
-                    step += Math.max(1, Math.floor(coords.length / 15));
+                    step += incrementoConstante;
                     if(step >= coords.length) step = coords.length - 1;
                 }
-            }, 25);
+            }, 35); // Cadência perfeita de atualização visual (35ms por frame)
         }
 
-        // Função auxiliar matemática para calcular e desenhar a contingência instantânea offline
         function acionarContingenciaDireta(validLat, validLon, city, classe) {
             const R = 6371;
             const dLat = (validLat - LAT_QUARTEL) * Math.PI / 180;
@@ -576,9 +579,10 @@
             document.getElementById('tel-tempo').innerText = durOffline;
             document.getElementById('painel-telemetria').style.display = 'block';
 
+            // Criação de pontos intermediários na linha reta para que a animação suave também funcione offline
             const pontosLinhaDireta = [];
-            for (let i = 0; i <= 30; i++) {
-                let t = i / 30;
+            for (let i = 0; i <= 60; i++) {
+                let t = i / 60;
                 let pLat = LAT_QUARTEL + (validLat - LAT_QUARTEL) * t;
                 let pLon = LON_QUARTEL + (validLon - LON_QUARTEL) * t;
                 pontosLinhaDireta.push([pLat, pLon]);
@@ -603,7 +607,6 @@
                 
                 const url = `https://router.project-osrm.org/route/v1/driving/${LON_QUARTEL},${LAT_QUARTEL};${validLon},${validLat}?overview=full&geometries=geojson`;
                 
-                // NOVO E CRÍTICO: Sistema de Controle de Tempo Máximo (Timeout de 400ms) para impedir congelamento do clique
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 400); 
 
@@ -626,7 +629,6 @@
                     })
                     .catch(err => {
                         clearTimeout(timeoutId);
-                        // Ativação paralela imediata se a internet falhar ou demorar mais que 400ms
                         acionarContingenciaDireta(validLat, validLon, city, classe);
                     });
             } catch (errGeral) {
