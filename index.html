@@ -275,7 +275,7 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="dados.js?v=1.0.4"></script>
+    <script src="dados.js?v=1.0.7"></script>
 
     <script>
         const LAT_QUARTEL = -10.9126, LON_QUARTEL = -37.0543; 
@@ -343,7 +343,13 @@
             }
         }
 
-        function cityLonFix(c) { return c.lon || c.lng || c.longit || c.longitude; }
+        function cityLonFix(c) { 
+            return c.lon || c.lng || c.longit || c.longitude || c.Lon || c.Lng || c.Longitude; 
+        }
+        
+        function cityLatFix(c) { 
+            return c.lat || c.latitude || c.Lat || c.Latitude; 
+        }
 
         function construirListagemEsquerda() {
             let tCidades = 0, tEfetivo = 0, tAbts = 0, tUrs = 0;
@@ -353,21 +359,23 @@
 
             if (typeof PLANILHA_MANUAL !== 'undefined' && Array.isArray(PLANILHA_MANUAL)) {
                 PLANILHA_MANUAL.forEach(cidade => {
-                    let cLat = cidade.lat, cLon = cityLonFix(cidade);
-                    if (!cLat || !cLon) return;
+                    let cLat = parseFloat(cityLatFix(cidade)), cLon = parseFloat(cityLonFix(cidade));
+                    if (isNaN(cLat) || isNaN(cLon)) return;
 
                     tCidades++;
-                    tEfetivo += parseInt(cidade.efetivo) || 0;
-                    tAbts += parseInt(cidade.abts) || 0;
-                    tUrs += parseInt(cidade.ur) || 0;
+                    tEfetivo += parseInt(cidade.efetivo || cidade.Efetivo) || 0;
+                    tAbts += parseInt(cidade.abts || cidade.abtt || cidade.Abts) || 0;
+                    tUrs += parseInt(cidade.ur || cidade.urs || cidade.Ur) || 0;
 
                     let ind = '🚒', classeRisco = 'risco-padrao';
-                    if (cidade.risco === 'Alto') { ind = '🔴'; classeRisco = 'risco-alto'; }
-                    else if (cidade.risco === 'Médio') { ind = '🟡'; classeRisco = 'risco-medio'; }
-                    else if (cidade.risco === 'Baixo') { ind = '🟢'; classeRisco = 'risco-baixo'; }
+                    let riscoTexto = cidade.risco || cidade.Risco || '';
+                    if (riscoTexto === 'Alto') { ind = '🔴'; classeRisco = 'risco-alto'; }
+                    else if (riscoTexto === 'Médio') { ind = '🟡'; classeRisco = 'risco-medio'; }
+                    else if (riscoTexto === 'Baixo') { ind = '🟢'; classeRisco = 'risco-baixo'; }
 
                     const li = document.createElement('li');
-                    li.innerHTML = `<span class="status-prefixo">${ind}</span> ${cidade.nome}`;
+                    let nomeCidade = cidade.nome || cidade.Nome || 'Cidade Sem Nome';
+                    li.innerHTML = `<span class="status-prefixo">${ind}</span> ${nomeCidade}`;
                     li.onclick = () => { 
                         mudarModo('estado'); 
                         gerarRotaEstadual(cLat, cLon, classeRisco, cidade);
@@ -393,7 +401,7 @@
             L.control.zoom({ position: 'topright' }).addTo(mapaEstado);
             
             L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+                attribution: 'Tiles'
             }).addTo(mapaEstado);
 
             L.marker([LAT_QUARTEL, LON_QUARTEL]).addTo(mapaEstado).bindPopup("<b>Quartel Geral - CBMSE</b>");
@@ -430,26 +438,6 @@
             });
 
             marcadorInfoGeral = L.marker([hImagem - 780, 650], { opacity: 0 }).addTo(mapaPlanta);
-
-            mapaPlanta.on('click', function(e) {
-                if (e.originalEvent.shiftKey) {
-                    let yPixelOriginal = Math.round(hImagem - e.latlng.lat);
-                    let xPixelOriginal = Math.round(e.latlng.lng);
-                    
-                    L.popup()
-                        .setLatLng(e.latlng)
-                        .setContent(`
-                            <div style="text-align:center; font-family:monospace; min-width:130px;">
-                                <b style="color:#d32f2f; font-size:12px;">📍 Ponto Capturado</b><br>
-                                <input type="text" value="[${yPixelOriginal}, ${xPixelOriginal}]" 
-                                       style="width:105px; text-align:center; margin:6px 0; padding:3px; border:1px solid #ccc; font-weight:bold;" 
-                                       id="copy-coord" readonly onclick="this.select();"><br>
-                                <small style="color:#666; font-size:10px;">Copie e cole no array de destaques</small>
-                            </div>
-                        `)
-                        .openOn(mapaPlanta);
-                }
-            });
         }
 
         function interagirPlantaPorTipo(tipoAlvo) {
@@ -519,17 +507,22 @@
         }
 
         function gerarHTMLPopup(cidade, dist = '', tempo = '') {
+            let nomeCid = cidade.nome || cidade.Nome || 'Cidade';
             let telem = dist && tempo ? `<p style="color:#e65100; background:#ffe0b2; padding:4px; border-radius:3px; text-align:center;"><b>⏱️ Resposta: ${tempo} (${dist})</b></p>` : '';
             
-            let prog = cidade.eventos_programados || '-';
-            let compl = cidade.eventos_complementares || '-';
-            let princ = cidade.eventos_principais || '-';
+            let prog = cidade.eventos_programados || cidade.Eventos_Programados || '-';
+            let compl = cidade.eventos_complementares || cidade.Eventos_Complementares || '-';
+            let princ = cidade.eventos_principais || cidade.Eventos_Principais || '-';
+            let riscoTxt = cidade.risco || cidade.Risco || '-';
+            let efh = cidade.efetivo || cidade.Efetivo || '-';
+            let abtsTxt = cidade.abts || cidade.Abts || '-';
+            let urTxt = cidade.ur || cidade.Ur || '-';
 
-            return `<div class="info-popup"><h3>${cidade.nome}</h3>${telem}
-                <p><strong>⚠️ Risco:</strong> ${cidade.risco || '-'}</p>
-                <p><strong>👨‍🚒 Efetivo:</strong> ${cidade.efetivo || '-'}</p>
-                <p><strong>🚒 ABTs:</strong> ${cidade.abts || '-'}</p>
-                <p><strong>🚑 URs:</strong> ${cidade.ur || '-'}</p>
+            return `<div class="info-popup"><h3>${nomeCid}</h3>${telem}
+                <p><strong>⚠️ Risco:</strong> ${riscoTxt}</p>
+                <p><strong>👨‍🚒 Efetivo:</strong> ${efh}</p>
+                <p><strong>🚒 ABTs:</strong> ${abtsTxt}</p>
+                <p><strong>🚑 URs:</strong> ${urTxt}</p>
                 <hr>
                 <p><strong>⭐ Principal:</strong> ${princ}</p>
                 <p><strong>📅 Programados:</strong> ${prog}</p>
@@ -538,12 +531,14 @@
 
         function limparRotaAnterior() {
             if (timerEstado) clearInterval(timerEstado);
-            if (rotaEstadoLinha) mapaEstado.removeLayer(rotaEstadoLinha);
-            if (vtrEstadoMarcador) mapaEstado.removeLayer(vtrEstadoMarcador);
+            if (rotaEstadoLinha) { try{mapaEstado.removeLayer(rotaEstadoLinha);}catch(e){} }
+            if (vtrEstadoMarcador) { try{mapaEstado.removeLayer(vtrEstadoMarcador);}catch(e){} }
             document.getElementById('painel-telemetria').style.display = 'none';
         }
 
         function animarCarrinho(coords, city, dist, dur, classe) {
+            if(!coords || coords.length === 0) return;
+            
             rotaEstadoLinha = L.polyline(coords, {color: '#ffeb3b', weight: 5}).addTo(mapaEstado);
             mapaEstado.fitBounds(rotaEstadoLinha.getBounds(), {padding: [40, 40]});
             
@@ -559,71 +554,85 @@
                     vtrEstadoMarcador.bindPopup(gerarHTMLPopup(city, dist, dur)).openPopup();
                 } else {
                     vtrEstadoMarcador.setLatLng(coords[step]);
-                    step += Math.max(1, Math.floor(coords.length / 40));
+                    step += Math.max(1, Math.floor(coords.length / 15));
                     if(step >= coords.length) step = coords.length - 1;
                 }
-            }, 40);
+            }, 25);
         }
 
-        /* CORRIGIDO: Função adaptada para ler lat e lon higienizados com suporte a falhas e OSRM */
-        function gerarRotaEstadual(lat, lon, classe, city) {
-            limparRotaAnterior();
+        // Função auxiliar matemática para calcular e desenhar a contingência instantânea offline
+        function acionarContingenciaDireta(validLat, validLon, city, classe) {
+            const R = 6371;
+            const dLat = (validLat - LAT_QUARTEL) * Math.PI / 180;
+            const dLon = (validLon - LON_QUARTEL) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(LAT_QUARTEL * Math.PI / 180) * Math.cos(validLat * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            const dEst = (R * c * 1.25); 
             
-            // Força a validação das coordenadas caso venham nulas por incompatibilidade do dados.js
-            let validLat = lat || city.lat;
-            let validLon = lon || cityLonFix(city);
+            const distOffline = dEst.toFixed(1) + ' km';
+            const durOffline = Math.round(dEst / 0.8) + ' min'; 
 
-            if(!validLat || !validLon) {
-                console.error("Coordenadas inválidas para animar a rota da cidade:", city.nome);
-                return;
+            document.getElementById('tel-distancia').innerText = distOffline;
+            document.getElementById('tel-tempo').innerText = durOffline;
+            document.getElementById('painel-telemetria').style.display = 'block';
+
+            const pontosLinhaDireta = [];
+            for (let i = 0; i <= 30; i++) {
+                let t = i / 30;
+                let pLat = LAT_QUARTEL + (validLat - LAT_QUARTEL) * t;
+                let pLon = LON_QUARTEL + (validLon - LON_QUARTEL) * t;
+                pontosLinhaDireta.push([pLat, pLon]);
             }
-
-            document.getElementById('tel-nome').innerText = city.nome;
-            const url = `https://router.project-osrm.org/route/v1/driving/${LON_QUARTEL},${LAT_QUARTEL};${validLon},${validLat}?overview=full&geometries=geojson`;
             
-            fetch(url)
-                .then(r => r.json())
-                .then(data => {
-                    if(!data.routes || !data.routes[0]) {
-                        throw new Error("Dados de rota inválidos");
-                    }
-                    const dist = (data.routes[0].distance / 1000).toFixed(1) + ' km';
-                    const dur = Math.round(data.routes[0].duration / 60) + ' min';
-                    
-                    document.getElementById('tel-distancia').innerText = dist;
-                    document.getElementById('tel-tempo').innerText = dur;
-                    document.getElementById('painel-telemetria').style.display = 'block';
+            animarCarrinho(pontosLinhaDireta, city, distOffline, durOffline, classe);
+        }
 
-                    const coords = data.routes[0].geometry.coordinates.map(p => [p[1], p[0]]);
-                    animarCarrinho(coords, city, dist, dur, classe);
-                })
-                .catch(err => {
-                    console.warn("API OSRM indisponível. Usando rota direta contingencial.");
-                    
-                    const R = 6371;
-                    const dLat = (validLat - LAT_QUARTEL) * Math.PI / 180;
-                    const dLon = (validLon - LON_QUARTEL) * Math.PI / 180;
-                    const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(LAT_QUARTEL * Math.PI / 180) * Math.cos(validLat * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
-                    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-                    const dEst = (R * c * 1.25); 
-                    
-                    const distOffline = dEst.toFixed(1) + ' km';
-                    const durOffline = Math.round(dEst / 0.8) + ' min'; 
+        function gerarRotaEstadual(lat, lon, classe, city) {
+            try {
+                limparRotaAnterior();
+                
+                let validLat = parseFloat(lat || cityLatFix(city));
+                let validLon = parseFloat(lon || cityLonFix(city));
 
-                    document.getElementById('tel-distancia').innerText = distOffline;
-                    document.getElementById('tel-tempo').innerText = durOffline;
-                    document.getElementById('painel-telemetria').style.display = 'block';
+                if(isNaN(validLat) || isNaN(validLon)) {
+                    alert("Erro interno: Coordenadas inválidas para a cidade " + (city.nome || city.Nome));
+                    return;
+                }
 
-                    const pontosLinhaDireta = [];
-                    for (let i = 0; i <= 30; i++) {
-                        let t = i / 30;
-                        let pLat = LAT_QUARTEL + (validLat - LAT_QUARTEL) * t;
-                        let pLon = LON_QUARTEL + (validLon - LON_QUARTEL) * t;
-                        pontosLinhaDireta.push([pLat, pLon]);
-                    }
-                    
-                    animarCarrinho(pontosLinhaDireta, city, distOffline, durOffline, classe);
-                });
+                document.getElementById('tel-nome').innerText = city.nome || city.Nome || 'Destino';
+                
+                const url = `https://router.project-osrm.org/route/v1/driving/${LON_QUARTEL},${LAT_QUARTEL};${validLon},${validLat}?overview=full&geometries=geojson`;
+                
+                // NOVO E CRÍTICO: Sistema de Controle de Tempo Máximo (Timeout de 400ms) para impedir congelamento do clique
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 400); 
+
+                fetch(url, { signal: controller.signal })
+                    .then(r => r.json())
+                    .then(data => {
+                        clearTimeout(timeoutId);
+                        if(!data.routes || !data.routes[0]) {
+                            throw new Error("Sem rotas");
+                        }
+                        const dist = (data.routes[0].distance / 1000).toFixed(1) + ' km';
+                        const dur = Math.round(data.routes[0].duration / 60) + ' min';
+                        
+                        document.getElementById('tel-distancia').innerText = dist;
+                        document.getElementById('tel-tempo').innerText = dur;
+                        document.getElementById('painel-telemetria').style.display = 'block';
+
+                        const coords = data.routes[0].geometry.coordinates.map(p => [p[1], p[0]]);
+                        animarCarrinho(coords, city, dist, dur, classe);
+                    })
+                    .catch(err => {
+                        clearTimeout(timeoutId);
+                        // Ativação paralela imediata se a internet falhar ou demorar mais que 400ms
+                        acionarContingenciaDireta(validLat, validLon, city, classe);
+                    });
+            } catch (errGeral) {
+                alert("Ocorreu um erro ao gerar a animação.");
+                console.error(errGeral);
+            }
         }
 
         window.onload = () => { 
