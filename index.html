@@ -275,7 +275,7 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="dados.js?v=1.0.8"></script>
+    <script src="dados.js?v=1.0.9"></script>
 
     <script>
         const LAT_QUARTEL = -10.9126, LON_QUARTEL = -37.0543; 
@@ -308,7 +308,7 @@
             { nome: "Viatura ABT - Vila do Forró", coord: [488, 1928], tipo: "vtr_vila" },
 
             { nome: "Guarnição CBMSE", coord: [748, 530], tipo: "guarnicao" },
-            { nome: "Guarnição CBMSE", coord: [832, 500], font_size: "18px", tipo: "guarnicao" },
+            { nome: "Guarnição CBMSE", coord: [832, 500], tipo: "guarnicao" },
             { nome: "Guarnição CBMSE", coord: [728, 656], tipo: "guarnicao" },
             { nome: "Guarnição CBMSE", coord: [848, 654], tipo: "guarnicao" },
             { nome: "Guarnição CBMSE", coord: [758, 1014], tipo: "guarnicao" },
@@ -547,9 +547,14 @@
             }).addTo(mapaEstado);
             
             let step = 0;
-            // VELOCIDADE EQUILIBRADA E SUAVE: O passo agora calcula uma taxa fixa proporcional para durar exatamente o tempo ideal
-            const framesTotais = 45; // Número fixo de atualizações para a viagem ser visível e elegante
-            const incrementoConstante = Math.max(1, Math.ceil(coords.length / framesTotais));
+            
+            // FÍSICA DE MOVIMENTO RECALIBRADA: O passo adapta-se dinamicamente ao tamanho da rota
+            // Evita o efeito teletransporte e respeita as curvas das ruas curtas
+            let fracionamento = 35; 
+            if (coords.length < 100) fracionamento = 15; // Rotas curtas (Aracaju/Barra) ganham passos curtos para detalhar curvas
+            else if (coords.length > 1000) fracionamento = 80; // Rotas longas avançam mais rápido
+            
+            const incrementoConstante = Math.max(1, Math.ceil(coords.length / fracionamento));
 
             timerEstado = setInterval(() => {
                 if (step >= coords.length - 1) {
@@ -561,7 +566,7 @@
                     step += incrementoConstante;
                     if(step >= coords.length) step = coords.length - 1;
                 }
-            }, 35); // Cadência perfeita de atualização visual (35ms por frame)
+            }, 40); // Cadência de atualização ideal de 40ms para um visual nítido e suave
         }
 
         function acionarContingenciaDireta(validLat, validLon, city, classe) {
@@ -579,7 +584,6 @@
             document.getElementById('tel-tempo').innerText = durOffline;
             document.getElementById('painel-telemetria').style.display = 'block';
 
-            // Criação de pontos intermediários na linha reta para que a animação suave também funcione offline
             const pontosLinhaDireta = [];
             for (let i = 0; i <= 60; i++) {
                 let t = i / 60;
@@ -608,7 +612,8 @@
                 const url = `https://router.project-osrm.org/route/v1/driving/${LON_QUARTEL},${LAT_QUARTEL};${validLon},${validLat}?overview=full&geometries=geojson`;
                 
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 400); 
+                // Aumentado o tempo limite para 2500ms para dar tempo à internet de carregar as curvas reais
+                const timeoutId = setTimeout(() => controller.abort(), 2500); 
 
                 fetch(url, { signal: controller.signal })
                     .then(r => r.json())
