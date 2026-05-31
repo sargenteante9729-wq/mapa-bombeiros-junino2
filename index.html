@@ -246,14 +246,13 @@
             { nome: "Viatura CBMSE - Arraiá do Povo", coord: [544, 172], cor: "#d32f2f", tipo: "vtr_arraia" },
             { nome: "Viatura CBMSE - Arraiá do Povo", coord: [720, 1372], cor: "#d32f2f", tipo: "vtr_arraia" },
             { nome: "Viatura CBMSE - Vila do Forró", coord: [720, 1372], cor: "#d32f2f", tipo: "vtr_vila" },
-             { nome: "Viatura CBMSE - Vila do Forró", coord: [492, 1922], cor: "#d32f2f", tipo: "vtr_vila" },
-
+            { nome: "Viatura CBMSE - Vila do Forró", coord: [492, 1922], cor: "#d32f2f", tipo: "vtr_vila" },
 
             { nome: "Guarnição CBMSE - Setor Oeste", coord: [748, 530], cor: "#ff9800", tipo: "guarnicao" },
-            { nome: "Guarnição CBMSE - Setor Leste", coord: [832, 500], cor: "#ff9800", tipo: "guarnicao" }
-            { nome: "Guarnição CBMSE - Setor Leste", coord: [728, 656], cor: "#ff9800", tipo: "guarnicao" }
-            { nome: "Guarnição CBMSE - Setor Leste", coord: [848, 654], cor: "#ff9800", tipo: "guarnicao" }
-            { nome: "Guarnição CBMSE - Setor Leste", coord: [758, 1014], cor: "#ff9800", tipo: "guarnicao" }
+            { nome: "Guarnição CBMSE - Setor Leste", coord: [832, 500], cor: "#ff9800", tipo: "guarnicao" },
+            { nome: "Guarnição CBMSE - Setor Leste", coord: [728, 656], cor: "#ff9800", tipo: "guarnicao" },
+            { nome: "Guarnição CBMSE - Setor Leste", coord: [848, 654], cor: "#ff9800", tipo: "guarnicao" },
+            { nome: "Guarnição CBMSE - Setor Leste", coord: [758, 1014], cor: "#ff9800", tipo: "guarnicao" },
             { nome: "Guarnição CBMSE - Setor Leste", coord: [840, 956], cor: "#ff9800", tipo: "guarnicao" }
         ];
 
@@ -387,7 +386,6 @@
             marcadorInfoGeral = L.marker([hImagem - 780, 650], { opacity: 0 }).addTo(mapaPlanta);
 
             // PASSO 1: Ferramenta inteligente de calibragem (Modo Desenvolvedor)
-            // Segure a tecla SHIFT no teclado e clique na Planta para extrair coordenadas reais instantaneamente
             mapaPlanta.on('click', function(e) {
                 if (e.originalEvent.shiftKey) {
                     let yPixelOriginal = Math.round(hImagem - e.latlng.lat);
