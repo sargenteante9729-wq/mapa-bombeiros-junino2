@@ -275,7 +275,7 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-   <script src="dados.js?v=1.0.1"></script>
+    <script src="dados.js?v=1.0.1"></script>
 
     <script>
         const LAT_QUARTEL = -10.9126, LON_QUARTEL = -37.0543; 
@@ -422,7 +422,7 @@
                 let pontoFocal = L.marker([yCorrigido, xCorrigido], { opacity: 0 }).addTo(mapaPlanta).bindPopup(`
                     <div style="text-align:center; font-family: Arial, sans-serif;">
                         <strong style="font-size:14px; color:#333;">${p.nome}</strong><br>
-                        <span style="font-size:11px; color:#666; text-transform:uppercase;">Serviço Operacional</span>
+                        <span style="font-size:11px; color:#666; text-transform:uppercase;">APH/Maqueiros</span>
                     </div>
                 `);
 
@@ -452,7 +452,6 @@
             });
         }
 
-        /* CARROSSEL AUTOMÁTICO INFINITO */
         function interagirPlantaPorTipo(tipoAlvo) {
             mudarModo('planta');
             fecharMenuMobile(); 
@@ -519,12 +518,12 @@
             }
         }
 
-       function gerarHTMLPopup(cidade, dist = '', tempo = '') {
+        /* CORRIGIDO: Função adaptada com segurança para renderizar os novos campos de eventos sem gerar erros */
+        function gerarHTMLPopup(cidade, dist = '', tempo = '') {
             let telem = dist && tempo ? `<p style="color:#e65100; background:#ffe0b2; padding:4px; border-radius:3px; text-align:center;"><b>⏱️ Resposta: ${tempo} (${dist})</b></p>` : '';
             
-            // Tratamento para garantir que se o campo não existir no dados.js, ele não quebre o layout
-            let prog = city.eventos_programados || cidade.eventos_programados || '-';
-            let compl = city.eventos_complementares || cidade.eventos_complementares || '-';
+            let prog = cidade.eventos_programados || '-';
+            let compl = cidade.eventos_complementares || '-';
             let princ = cidade.eventos_principais || '-';
 
             return `<div class="info-popup"><h3>${cidade.nome}</h3>${telem}
