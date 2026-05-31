@@ -113,25 +113,26 @@
             flex-grow: 1;
             height: 100vh;
             display: flex;
-            flex-direction: row; /* Coloca Mapa ao lado do Vídeo */
+            flex-direction: row; 
             background: #e5e9f0;
         }
 
-        /* CONTAINER DOS MAPAS (OCUPA 65%) */
+        /* CONTAINER DOS MAPAS (FLEXÍVEL DINAMICAMENTE) */
         #area-mapas { 
-            width: 65%; 
+            flex-grow: 1;
             height: 100vh; 
             position: relative; 
         }
         .mapa-janela { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
         
-        /* CONTAINER DO STREAMING YOUTUBE (OCUPA 35%) */
+        /* CONTAINER DO STREAMING REDUZIDO (AGORA OCUPA 25% NA VISÃO ESTADUAL) */
         #area-streaming {
-            width: 35%;
+            width: 25%;
             height: 100vh;
             background: #000000;
             border-left: 4px solid #d32f2f;
             box-sizing: border-box;
+            flex-shrink: 0;
         }
         #area-streaming iframe {
             width: 100%;
@@ -176,17 +177,17 @@
 
             #area-principal-conteudo {
                 width: 100% !important;
-                flex-direction: column; /* No celular, o vídeo fica embaixo do mapa */
+                flex-direction: column; 
             }
 
             #area-mapas {
                 width: 100% !important;
-                height: 60vh; /* Mapa em cima */
+                height: 60vh; 
             }
 
             #area-streaming {
                 width: 100% !important;
-                height: 40vh; /* Vídeo embaixo */
+                height: 40vh !important; 
                 border-left: none;
                 border-top: 4px solid #d32f2f;
             }
@@ -428,7 +429,6 @@
             });
         }
 
-        // CARROSSEL COM ENCERRAMENTO AUTOMÁTICO (PRESERVADO)
         function interagirPlantaPorTipo(tipoAlvo) {
             mudarModo('planta');
             fecharMenuMobile(); 
@@ -459,6 +459,7 @@
             }
         }
 
+        // MUDANÇA DE MODO ATUALIZADA: Controla a exibição do vídeo dinamicamente
         function mudarModo(modo) {
             const isEst = modo === 'estado';
             document.getElementById('btn-estado').className = `btn-modo ${isEst ? 'ativo' : ''}`;
@@ -468,6 +469,14 @@
             document.getElementById('mapa-estado').style.display = isEst ? 'block' : 'none';
             document.getElementById('mapa-planta').style.display = !isEst ? 'block' : 'none';
             
+            // EXCLUSIVO: Oculta a div do streaming se estiver fora da visão estadual no desktop
+            if (window.innerWidth > 768) {
+                document.getElementById('area-streaming').style.display = isEst ? 'block' : 'none';
+            } else {
+                // No mobile, removemos barreiras para evitar quebras de altura
+                document.getElementById('area-streaming').style.display = isEst ? 'block' : 'none';
+            }
+
             setTimeout(() => { 
                 if(isEst && mapaEstado) { mapaEstado.invalidateSize(); } 
                 if(!isEst && mapaPlanta) { mapaPlanta.invalidateSize(); } 
