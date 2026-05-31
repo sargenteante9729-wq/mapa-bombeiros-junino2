@@ -108,42 +108,46 @@
         ul.lista-dados li:hover { background-color: #ffebee; }
         .status-prefixo { margin-right: 12px; font-size: 1.1rem; }
         
-        /* ÁREA GLOBAL DA DIREITA (MAPA + VIDEO) */
+        /* ÁREA GLOBAL DA DIREITA */
         #area-principal-conteudo {
             flex-grow: 1;
-            height: auto;
-            display: flex;
-            flex-direction: row; 
+            height: 100vh;
+            position: relative; /* Permite posicionamento absoluto do vídeo por cima */
             background: #e5e9f0;
         }
 
-        /* CONTAINER DOS MAPAS */
+        /* MAPA OCUPA 100% DA ÁREA PRINCIPAL */
         #area-mapas { 
-            flex-grow: 1;
+            width: 100%; 
             height: 100vh; 
-            position: relative; 
+            position: absolute;
+            top: 0; left: 0;
+            z-index: 1;
         }
         .mapa-janela { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
         
-        /* CONTAINER DO STREAMING AJUSTADO (MANTÉM 25% DE LARGURA) */
+        /* CONTAINER DO VÍDEO SUPER COMPACTO (SÓ O TAMANHO DO VÍDEO) */
         #area-streaming {
-            width: 25%;
-            height: 100vh;
-            background: #111116; /* Fundo escuro tático abaixo do vídeo */
-            border-left: 4px solid #d32f2f;
+            position: absolute;
+            top: 10px;
+            right: 10px; /* Fixado no canto superior direito */
+            width: 25%; /* Largura mantida */
+            height: auto; /* Altura estrita ao vídeo */
+            background: #000000;
+            border: 3px solid #d32f2f;
+            border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
             box-sizing: border-box;
-            flex-shrink: 0;
+            z-index: 1000; /* Fica flutuando acima do mapa de satélite */
             display: flex;
-            flex-direction: column;
-            justify-content: flex-start; /* Fixa o vídeo no topo da barra */
         }
         
-        /* AJUSTE NA ALTURA: Proporção cinematográfica widescreen para não distorcer */
         #area-streaming iframe {
             width: 100%;
             height: auto;
-            aspect-ratio: 16 / 9; /* Mantém a altura proporcional perfeita automaticamente */
+            aspect-ratio: 16 / 9; /* Força a proporção exata, eliminando sobras brancas ou pretas */
             border: none;
+            display: block;
         }
 
         /* MARCADORES E POPUPS */
@@ -182,20 +186,24 @@
             }
 
             #area-principal-conteudo {
-                width: 100% !important;
+                display: flex;
                 flex-direction: column; 
             }
 
             #area-mapas {
+                position: relative;
                 width: 100% !important;
                 height: 65vh; 
             }
 
             #area-streaming {
+                position: relative;
+                top: 0; right: 0;
                 width: 100% !important;
                 height: auto !important; 
                 border-left: none;
                 border-top: 4px solid #d32f2f;
+                border-radius: 0;
             }
 
             .leaflet-top.leaflet-right { top: 65px !important; }
@@ -310,6 +318,15 @@
             if (window.innerWidth <= 768) {
                 document.getElementById('menu-lateral').classList.remove('aberto');
                 document.getElementById('btn-menu-mobile').innerText = "<b>☰ Menu</b>";
+            }
+        }
+
+        function toggleStreamingMobileLayout(isEst) {
+            const streamingDiv = document.getElementById('area-streaming');
+            if (window.innerWidth <= 768) {
+                streamingDiv.style.position = isEst ? 'relative' : 'absolute';
+                streamingDiv.style.visibility = isEst ? 'visible' : 'hidden';
+                streamingDiv.style.height = isEst ? 'auto' : '0px';
             }
         }
 
@@ -474,8 +491,12 @@
             document.getElementById('mapa-estado').style.display = isEst ? 'block' : 'none';
             document.getElementById('mapa-planta').style.display = !isEst ? 'block' : 'none';
             
-            // Oculta/Exibe a barra lateral de streaming baseada no modo
-            document.getElementById('area-streaming').style.display = isEst ? 'flex' : 'none';
+            // Controle dinâmico inteligente de visibilidade
+            if (window.innerWidth > 768) {
+                document.getElementById('area-streaming').style.display = isEst ? 'flex' : 'none';
+            } else {
+                toggleStreamingMobileLayout(isEst);
+            }
 
             setTimeout(() => { 
                 if(isEst && mapaEstado) { mapaEstado.invalidateSize(); } 
