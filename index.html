@@ -519,14 +519,23 @@
             }
         }
 
-        function gerarHTMLPopup(cidade, dist = '', tempo = '') {
+       function gerarHTMLPopup(cidade, dist = '', tempo = '') {
             let telem = dist && tempo ? `<p style="color:#e65100; background:#ffe0b2; padding:4px; border-radius:3px; text-align:center;"><b>⏱️ Resposta: ${tempo} (${dist})</b></p>` : '';
+            
+            // Tratamento para garantir que se o campo não existir no dados.js, ele não quebre o layout
+            let prog = city.eventos_programados || cidade.eventos_programados || '-';
+            let compl = city.eventos_complementares || cidade.eventos_complementares || '-';
+            let princ = cidade.eventos_principais || '-';
+
             return `<div class="info-popup"><h3>${cidade.nome}</h3>${telem}
                 <p><strong>⚠️ Risco:</strong> ${cidade.risco || '-'}</p>
                 <p><strong>👨‍🚒 Efetivo:</strong> ${cidade.efetivo || '-'}</p>
                 <p><strong>🚒 ABTs:</strong> ${cidade.abts || '-'}</p>
                 <p><strong>🚑 URs:</strong> ${cidade.ur || '-'}</p>
-                <hr><p><strong>⭐ Principal:</strong> ${cidade.eventos_principais || '-'}</p></div>`;
+                <hr>
+                <p><strong>⭐ Principal:</strong> ${princ}</p>
+                <p><strong>📅 Programados:</strong> ${prog}</p>
+                <p><strong>📝 Complementares:</strong> ${compl}</p></div>`;
         }
 
         function limparRotaAnterior() {
