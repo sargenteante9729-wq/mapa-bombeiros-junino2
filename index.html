@@ -112,7 +112,7 @@
         #area-principal-conteudo {
             flex-grow: 1;
             height: 100vh;
-            position: relative; /* Permite posicionamento absoluto do vídeo por cima */
+            position: relative;
             background: #e5e9f0;
         }
 
@@ -126,26 +126,26 @@
         }
         .mapa-janela { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
         
-        /* CONTAINER DO VÍDEO SUPER COMPACTO (SÓ O TAMANHO DO VÍDEO) */
+        /* CONTAINER DO VÍDEO SUPER COMPACTO */
         #area-streaming {
             position: absolute;
             top: 10px;
-            right: 10px; /* Fixado no canto superior direito */
-            width: 25%; /* Largura mantida */
-            height: auto; /* Altura estrita ao vídeo */
+            right: 10px;
+            width: 25%;
+            height: auto;
             background: #000000;
             border: 3px solid #d32f2f;
             border-radius: 4px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
             box-sizing: border-box;
-            z-index: 1000; /* Fica flutuando acima do mapa de satélite */
+            z-index: 1000;
             display: flex;
         }
         
         #area-streaming iframe {
             width: 100%;
             height: auto;
-            aspect-ratio: 16 / 9; /* Força a proporção exata, eliminando sobras brancas ou pretas */
+            aspect-ratio: 16 / 9;
             border: none;
             display: block;
         }
@@ -266,7 +266,7 @@
 
         <div id="area-streaming">
             <iframe 
-                src="https://www.youtube.com/watch?v=TI6iETIHBLI" 
+                src="https://www.youtube.com/embed/TI6iETIHBLI" 
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
                 allowfullscreen>
             </iframe>
@@ -284,6 +284,7 @@
         let rotaEstadoLinha = null, vtrEstadoMarcador = null, timerEstado = null;
         let marcadorInfoGeral = null;
         let temporizadorCarrosselPlanta = null; 
+        let indicesNavegacaoManual = {};
 
         let referenciasDestaques = [];
 
@@ -430,7 +431,6 @@
 
             marcadorInfoGeral = L.marker([hImagem - 780, 650], { opacity: 0 }).addTo(mapaPlanta);
 
-            // Shift + Clique para calibrar coordenadas
             mapaPlanta.on('click', function(e) {
                 if (e.originalEvent.shiftKey) {
                     let yPixelOriginal = Math.round(hImagem - e.latlng.lat);
@@ -452,6 +452,7 @@
             });
         }
 
+        /* CARROSSEL AUTOMÁTICO INFINITO */
         function interagirPlantaPorTipo(tipoAlvo) {
             mudarModo('planta');
             fecharMenuMobile(); 
@@ -461,17 +462,18 @@
             const itensFiltrados = referenciasDestaques.filter(item => item.tipo === tipoAlvo);
 
             if (itensFiltrados.length > 0) {
-                let indice = 0;
+                if (indicesNavegacaoManual[tipoAlvo] === undefined) {
+                    indicesNavegacaoManual[tipoAlvo] = 0;
+                }
 
                 function executarPassoCarrossel() {
-                    if (indice < itensFiltrados.length) {
-                        const alvo = itensFiltrados[indice];
-                        mapaPlanta.panTo(alvo.centro);
-                        alvo.elemento.openPopup();
-                        indice++; 
-                    } else {
-                        clearInterval(temporizadorCarrosselPlanta);
-                    }
+                    let indiceAtual = indicesNavegacaoManual[tipoAlvo];
+                    const alvo = itensFiltrados[indiceAtual];
+                    
+                    mapaPlanta.panTo(alvo.centro);
+                    alvo.elemento.openPopup();
+                    
+                    indicesNavegacaoManual[tipoAlvo] = (indiceAtual + 1) % itensFiltrados.length;
                 }
 
                 executarPassoCarrossel();
@@ -491,7 +493,6 @@
             document.getElementById('mapa-estado').style.display = isEst ? 'block' : 'none';
             document.getElementById('mapa-planta').style.display = !isEst ? 'block' : 'none';
             
-            // Controle dinâmico inteligente de visibilidade
             if (window.innerWidth > 768) {
                 document.getElementById('area-streaming').style.display = isEst ? 'flex' : 'none';
             } else {
