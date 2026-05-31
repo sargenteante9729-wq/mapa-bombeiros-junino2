@@ -108,15 +108,37 @@
         ul.lista-dados li:hover { background-color: #ffebee; }
         .status-prefixo { margin-right: 12px; font-size: 1.1rem; }
         
-        /* ÁREA DE MAPAS */
+        /* ÁREA GLOBAL DA DIREITA (MAPA + VIDEO) */
+        #area-principal-conteudo {
+            flex-grow: 1;
+            height: 100vh;
+            display: flex;
+            flex-direction: row; /* Coloca Mapa ao lado do Vídeo */
+            background: #e5e9f0;
+        }
+
+        /* CONTAINER DOS MAPAS (OCUPA 65%) */
         #area-mapas { 
-            flex-grow: 1; 
+            width: 65%; 
             height: 100vh; 
             position: relative; 
-            background: #e5e9f0; 
         }
         .mapa-janela { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
         
+        /* CONTAINER DO STREAMING YOUTUBE (OCUPA 35%) */
+        #area-streaming {
+            width: 35%;
+            height: 100vh;
+            background: #000000;
+            border-left: 4px solid #d32f2f;
+            box-sizing: border-box;
+        }
+        #area-streaming iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
         /* MARCADORES E POPUPS */
         .marcador-bombeiro {
             font-size: 18px; text-align: center;
@@ -145,17 +167,28 @@
                 width: 290px;
                 height: 100vh;
                 transform: translateX(-100%);
+                z-index: 2500;
             }
             
             #menu-lateral.aberto {
                 transform: translateX(0);
             }
 
+            #area-principal-conteudo {
+                width: 100% !important;
+                flex-direction: column; /* No celular, o vídeo fica embaixo do mapa */
+            }
+
             #area-mapas {
                 width: 100% !important;
-                position: absolute;
-                top: 0; left: 0;
-                z-index: 1;
+                height: 60vh; /* Mapa em cima */
+            }
+
+            #area-streaming {
+                width: 100% !important;
+                height: 40vh; /* Vídeo embaixo */
+                border-left: none;
+                border-top: 4px solid #d32f2f;
             }
 
             .leaflet-top.leaflet-right { top: 65px !important; }
@@ -209,9 +242,21 @@
         </div>
     </div>
     
-    <div id="area-mapas">
-        <div id="mapa-estado" class="mapa-janela"></div>
-        <div id="mapa-planta" class="mapa-janela" style="display: none;"></div>
+    <div id="area-principal-conteudo">
+        
+        <div id="area-mapas">
+            <div id="mapa-estado" class="mapa-janela"></div>
+            <div id="mapa-planta" class="mapa-janela" style="display: none;"></div>
+        </div>
+
+        <div id="area-streaming">
+            <iframe 
+                src="https://www.youtube.com/embed/live_stream?channel=UC_ID_DO_CANAL_AQUI&autoplay=1&mute=1&rel=0" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                allowfullscreen>
+            </iframe>
+        </div>
+
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -243,8 +288,8 @@
 
             { nome: "Viatura UR - Arraiá do Povo", coord: [544, 172], tipo: "vtr_arraia" },
             { nome: "Viatura ABT - Arraiá do Povo", coord: [716, 1314], tipo: "vtr_arraia" }, 
-            { nome: "Viatura UR - Vila do Forró", coord: [803, 1848], tipo: "vtr_vila" },    
-            { nome: "Viatura ABT - Vila do Forró", coord: [479, 1901], tipo: "vtr_vila" },
+            { nome: "Viatura UR - Vila do Forró", coord: [720, 1372], tipo: "vtr_vila" },    
+            { nome: "Viatura ABT - Vila do Forró", coord: [802, 1846], tipo: "vtr_vila" },
 
             { nome: "Guarnição CBMSE", coord: [748, 530], tipo: "guarnicao" },
             { nome: "Guarnição CBMSE", coord: [832, 500], tipo: "guarnicao" },
@@ -345,7 +390,6 @@
 
             referenciasDestaques = [];
 
-            // Polígonos geométricos removidos! Agora criamos âncoras focais limpas com opacidade 0
             locaisDestaquesPSCIP.forEach(p => {
                 let yCorrigido = hImagem - p.coord[0];
                 let xCorrigido = p.coord[1];
@@ -403,7 +447,6 @@
                         alvo.elemento.openPopup();
                         indice++; 
                     } else {
-                        // Varredura concluída com sucesso: desliga o temporizador e para
                         clearInterval(temporizadorCarrosselPlanta);
                     }
                 }
