@@ -7,7 +7,7 @@ const PLANILHA_MANUAL = [
     {
         nome: "Aracaju", lat: -10.97395 , lon: -37.03735,
         abts: "2", ur: "2", efetivo: "40+", risco: "Alto", coordenacao: "1º GBM", publico: "25.000+",
-        eventos_programados: "🎤 Vila do Forró: 01 a 30/06\n🎤 Arraiá do Povo: 29/05 a 28/06\n🎤 Forró Caju: 29/05 a 28/07",
+        eventos_programados: "🎤 Vila do Forró: 29/05 a 26/06\n🎤 Arraiá do Povo: 29/05 a 28/06\n🎤 Forró Caju: 20/06 a 28/06",
         eventos_complementares: "📍 Praça Santos Dumont (12 e 13/06): 🚑 01 viatura\n📍 Conj. Augusto Franco (04, 05 e 06/06): 🚑 01 viatura"
     },
     {
