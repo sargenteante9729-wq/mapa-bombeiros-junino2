@@ -225,7 +225,6 @@
         let marcadorInfoGeral = null;
 
         let referenciasDestaques = [];
-        let indicesNavegacao = {}; 
 
         const wImagem = 2000, hImagem = 1414;
         const limitesPlanta = [[0, 0], [hImagem, wImagem]];
@@ -322,7 +321,7 @@
             mapaEstado = L.map('mapa-estado', { zoomControl: false }).setView([-10.7, -37.4], 8);
             L.control.zoom({ position: 'topright' }).addTo(mapaEstado);
             
-            // CONFIGURAÇÃO DO MAPA DE SATÉLITE (Esri World Imagery)
+            // MAPA DE SATÉLITE
             L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
                 attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
             }).addTo(mapaEstado);
@@ -385,24 +384,20 @@
             });
         }
 
+        // Correção definitiva da Interação Estática (Sem carrossel e sem pular pontos involuntariamente)
         function interagirPlantaPorTipo(tipoAlvo) {
             mudarModo('planta');
             fecharMenuMobile(); 
 
+            // Filtra os locais correspondentes ao botão clicado
             const itensFiltrados = referenciasDestaques.filter(item => item.tipo === tipoAlvo);
 
             if (itensFiltrados.length > 0) {
-                if (indicesNavegacao[tipoAlvo] === undefined) {
-                    indicesNavegacao[tipoAlvo] = 0;
-                }
-
-                let indiceAtual = indicesNavegacao[tipoAlvo];
-                const alvo = itensFiltrados[indiceAtual];
+                // Sempre vai focar no ponto de forma estática ao clicar
+                const alvo = itensFiltrados[0]; 
 
                 mapaPlanta.panTo(alvo.centro);
                 alvo.elemento.openPopup();
-
-                indicesNavegacao[tipoAlvo] = (indiceAtual + 1) % itensFiltrados.length;
             }
         }
 
@@ -470,7 +465,6 @@
 
                     const coords = data.routes[0].geometry.coordinates.map(p => [p[1], p[0]]);
                     
-                    // Rota amarela/laranja para contrastar melhor sobre o satélite escuro
                     rotaEstadoLinha = L.polyline(coords, {color: '#ffeb3b', weight: 5}).addTo(mapaEstado);
                     mapaEstado.fitBounds(rotaEstadoLinha.getBounds(), {padding: [40, 40]});
                     
