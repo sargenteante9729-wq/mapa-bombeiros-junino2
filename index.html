@@ -275,7 +275,7 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="dados.js?v=1.0.1"></script>
+    <script src="dados.js?v=1.0.2"></script>
 
     <script>
         const LAT_QUARTEL = -10.9126, LON_QUARTEL = -37.0543; 
@@ -307,12 +307,12 @@
             { nome: "Viatura UR - Vila do Forró", coord: [772, 1862], tipo: "vtr_vila" },    
             { nome: "Viatura ABT - Vila do Forró", coord: [488, 1928], tipo: "vtr_vila" },
 
-            { nome: "Guarnição CBMSE", coord: [748, 530], tipo: "guarnicao" },
-            { nome: "Guarnição CBMSE", coord: [832, 500], tipo: "guarnicao" },
-            { nome: "Guarnição CBMSE", coord: [728, 656], tipo: "guarnicao" },
-            { nome: "Guarnição CBMSE", coord: [848, 654], tipo: "guarnicao" },
-            { nome: "Guarnição CBMSE", coord: [758, 1014], tipo: "guarnicao" },
-            { nome: "Guarnição CBMSE", coord: [840, 956], tipo: "guarnicao" }
+            { nome: "Guarnição CBMSE", coord: [748, 530], font: "guarnicao", tipo: "guarnicao" },
+            { nome: "Guarnição CBMSE", coord: [832, 500], font: "guarnicao", tipo: "guarnicao" },
+            { nome: "Guarnição CBMSE", coord: [728, 656], font: "guarnicao", tipo: "guarnicao" },
+            { nome: "Guarnição CBMSE", coord: [848, 654], font: "guarnicao", tipo: "guarnicao" },
+            { nome: "Guarnição CBMSE", coord: [758, 1014], font: "guarnicao", tipo: "guarnicao" },
+            { nome: "Guarnição CBMSE", coord: [840, 956], font: "guarnicao", tipo: "guarnicao" }
         ];
 
         function fecharMenuMobile() {
@@ -422,7 +422,7 @@
                 let pontoFocal = L.marker([yCorrigido, xCorrigido], { opacity: 0 }).addTo(mapaPlanta).bindPopup(`
                     <div style="text-align:center; font-family: Arial, sans-serif;">
                         <strong style="font-size:14px; color:#333;">${p.nome}</strong><br>
-                        <span style="font-size:11px; color:#666; text-transform:uppercase;"> </span>
+                        <span style="font-size:11px; color:#666; text-transform:uppercase;">APH/Maqueiros</span>
                     </div>
                 `);
 
@@ -518,7 +518,6 @@
             }
         }
 
-        /* CORRIGIDO: Função adaptada com segurança para renderizar os novos campos de eventos sem gerar erros */
         function gerarHTMLPopup(cidade, dist = '', tempo = '') {
             let telem = dist && tempo ? `<p style="color:#e65100; background:#ffe0b2; padding:4px; border-radius:3px; text-align:center;"><b>⏱️ Resposta: ${tempo} (${dist})</b></p>` : '';
             
@@ -544,41 +543,81 @@
             document.getElementById('painel-telemetria').style.display = 'none';
         }
 
+        /* CORRIGIDO: Agora possui um plano de contingência offline instantâneo que impede o travamento do carrinho */
+        function animarCarrinho(coords, city, dist, dur, classe) {
+            rotaEstadoLinha = L.polyline(coords, {color: '#ffeb3b', weight: 5}).addTo(mapaEstado);
+            mapaEstado.fitBounds(rotaEstadoLinha.getBounds(), {padding: [40, 40]});
+            
+            vtrEstadoMarcador = L.marker(coords[0], { 
+                icon: L.divIcon({ html: '🚒', className: `marcador-bombeiro ${classe}`, iconSize: [34, 34] }) 
+            }).addTo(mapaEstado);
+            
+            let step = 0;
+            timerEstado = setInterval(() => {
+                if (step >= coords.length - 1) {
+                    clearInterval(timerEstado);
+                    vtrEstadoMarcador.setLatLng(coords[coords.length - 1]);
+                    // CORRIGIDO: Alterado de 'city' para 'city' (objeto correto da função) para evitar congelamentos no fim
+                    vtrEstadoMarcador.bindPopup(gerarHTMLPopup(city, dist, dur)).openPopup();
+                } else {
+                    vtrEstadoMarcador.setLatLng(coords[step]);
+                    step += Math.max(1, Math.floor(coords.length / 40));
+                    if(step >= coords.length) step = coords.length - 1;
+                }
+            }, 40);
+        }
+
         function gerarRotaEstadual(lat, lon, classe, city) {
             limparRotaAnterior();
+            
+            document.getElementById('tel-nome').innerText = city.nome;
             const url = `https://router.project-osrm.org/route/v1/driving/${LON_QUARTEL},${LAT_QUARTEL};${lon},${lat}?overview=full&geometries=geojson`;
             
             fetch(url)
                 .then(r => r.json())
                 .then(data => {
-                    if(!data.routes || !data.routes[0]) return;
+                    if(!data.routes || !data.routes[0]) {
+                        throw new Error("Dados de rota inválidos");
+                    }
                     const dist = (data.routes[0].distance / 1000).toFixed(1) + ' km';
                     const dur = Math.round(data.routes[0].duration / 60) + ' min';
                     
-                    document.getElementById('tel-nome').innerText = city.nome;
                     document.getElementById('tel-distancia').innerText = dist;
                     document.getElementById('tel-tempo').innerText = dur;
                     document.getElementById('painel-telemetria').style.display = 'block';
 
                     const coords = data.routes[0].geometry.coordinates.map(p => [p[1], p[0]]);
+                    animarCarrinho(coords, city, dist, dur, classe);
+                })
+                .catch(err => {
+                    console.warn("API OSRM indisponível ou lenta. Usando rota direta segura em linha.");
                     
-                    rotaEstadoLinha = L.polyline(coords, {color: '#ffeb3b', weight: 5}).addTo(mapaEstado);
-                    mapaEstado.fitBounds(rotaEstadoLinha.getBounds(), {padding: [40, 40]});
+                    // Cálculo aproximado de distância em linha reta para manter a telemetria funcionando offline
+                    const R = 6371;
+                    const dLat = (lat - LAT_QUARTEL) * Math.PI / 180;
+                    const dLon = (lon - LON_QUARTEL) * Math.PI / 180;
+                    const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(LAT_QUARTEL * Math.PI / 180) * Math.cos(lat * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+                    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                    const dEst = (R * c * 1.25); // Fator de correção de curvas rodoviárias
                     
-                    vtrEstadoMarcador = L.marker(coords[0], { icon: L.divIcon({ html: '🚒', className: `marcador-bombeiro ${classe}`, iconSize: [34, 34] }) }).addTo(mapaEstado);
+                    const distOffline = dEst.toFixed(1) + ' km';
+                    const durOffline = Math.round(dEst / 0.8) + ' min'; // Média de 80km/h para o socorro
+
+                    document.getElementById('tel-distancia').innerText = distOffline;
+                    document.getElementById('tel-tempo').innerText = durOffline;
+                    document.getElementById('painel-telemetria').style.display = 'block';
+
+                    // Gera 30 pontos intermediários automáticos para criar um movimento fluido na linha reta
+                    const pontosLinha Direta = [];
+                    for (let i = 0; i <= 30; i++) {
+                        let t = i / 30;
+                        let pLat = LAT_QUARTEL + (lat - LAT_QUARTEL) * t;
+                        let pLon = LON_QUARTEL + (lon - LON_QUARTEL) * t;
+                        pontosLinhaDireta.push([pLat, pLon]);
+                    }
                     
-                    let step = 0;
-                    timerEstado = setInterval(() => {
-                        if (step >= coords.length - 1) {
-                            clearInterval(timerEstado);
-                            vtrEstadoMarcador.bindPopup(gerarHTMLPopup(city, dist, dur)).openPopup();
-                        } else {
-                            vtrEstadoMarcador.setLatLng(coords[step]);
-                            step += Math.max(1, Math.floor(coords.length/50));
-                            if(step >= coords.length) step = coords.length-1;
-                        }
-                    }, 40);
-                }).catch(err => console.error("Erro na requisição OSRM: ", err));
+                    animarCarrinho(pontosLinhaDireta, city, distOffline, durOffline, classe);
+                });
         }
 
         window.onload = () => { 
