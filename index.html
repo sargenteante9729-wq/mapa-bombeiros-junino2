@@ -244,9 +244,9 @@
             { nome: "Entrada de Público Inferior Arena", coord: [382, 658], cor: "#00b0ff", tipo: "entrada" },
 
             { nome: "Viatura UR - Arraiá do Povo", coord: [544, 172], cor: "#d32f2f", tipo: "vtr_arraia" },
-            { nome: "Viatura ABT - Arraiá do Povo", coord: [707, 1371], cor: "#d32f2f", tipo: "vtr_vila" },
-            { nome: "Viatura UR - Vila do Forró", coord: [802, 1844], cor: "#d32f2f", tipo: "vtr_arraia" },
-            { nome: "Viatura ABT - Vila do Forró", coord:[478, 1880], cor: "#d32f2f", tipo: "vtr_vila" },
+            { nome: "Viatura ABT - Arraiá do Povo", coord: [716, 1314], cor: "#d32f2f", tipo: "vtr_arraia" }, // Corrigido para vtr_arraia
+            { nome: "Viatura UR - Vila do Forró", coord: [720, 1372], cor: "#d32f2f", tipo: "vtr_vila" },  // Corrigido para vtr_vila
+            { nome: "Viatura ABT - Vila do Forró", coord: [802, 1846], cor: "#d32f2f", tipo: "vtr_vila" },
 
             { nome: "Guarnição CBMSE", coord: [748, 530], cor: "#ff9800", tipo: "guarnicao" },
             { nome: "Guarnição CBMSE", coord: [832, 500], cor: "#ff9800", tipo: "guarnicao" },
@@ -343,7 +343,6 @@
 
             referenciasRetangulos = [];
 
-            // PASSO 2: Desenho parametrizado, otimizado e estilizado dos destaques táticos da planta
             locaisDestaquesPSCIP.forEach(p => {
                 let largura = 64, altura = 46;
                 let estiloBorda = null;
@@ -351,9 +350,9 @@
                 if (p.tipo.indexOf("vtr") !== -1) { 
                     largura = 94; altura = 60; 
                 } else if (p.tipo === "guarnicao") { 
-                    largura = 120; altura = 85; 
+                    largura = 120; height = 85; 
                 } else if (p.tipo === "saida") {
-                    estiloBorda = "8, 8"; // Linha tracejada tática para saídas de emergência
+                    estiloBorda = "8, 8";
                 } else if (p.nome.indexOf("Bilheteria") !== -1) { 
                     largura = 136; altura = 136; 
                 }
@@ -385,7 +384,7 @@
 
             marcadorInfoGeral = L.marker([hImagem - 780, 650], { opacity: 0 }).addTo(mapaPlanta);
 
-            // PASSO 1: Ferramenta inteligente de calibragem (Modo Desenvolvedor)
+            // Ferramenta de calibragem (Shift + Clique)
             mapaPlanta.on('click', function(e) {
                 if (e.originalEvent.shiftKey) {
                     let yPixelOriginal = Math.round(hImagem - e.latlng.lat);
@@ -426,14 +425,24 @@
                         alvo.elemento.openPopup();
                         indice++;
                     } else {
-                        clearInterval(temporizadorCarrosselPlanta);
+                        // Se for viatura ou guarnição e acabou a lista, para no primeiro em vez de limpar o loop abruptamente
+                        if(tipoAlvo.indexOf("vtr") !== -1 || tipoAlvo === "guarnicao") {
+                            indice = 0; // Faz um loop infinito controlado se houver mais de um
+                            const alvo = itensFiltrados[indice];
+                            mapaPlanta.panTo(alvo.centro);
+                            alvo.elemento.openPopup();
+                            indice++;
+                        } else {
+                            clearInterval(temporizadorCarrosselPlanta);
+                        }
                     }
                 }
 
                 executarPassoCarrossel();
 
+                // Só ativa o temporizador automático se houver múltiplos itens daquele mesmo tipo estrito
                 if (itensFiltrados.length > 1) {
-                    temporizadorCarrosselPlanta = setInterval(executarPassoCarrossel, 2600);
+                    temporizadorCarrosselPlanta = setInterval(executarPassoCarrossel, 2800);
                 }
             }
         }
