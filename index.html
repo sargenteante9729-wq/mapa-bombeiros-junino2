@@ -225,6 +225,8 @@
         let marcadorInfoGeral = null;
 
         let referenciasDestaques = [];
+        // Objeto global para memorizar a posição atual de cada categoria
+        let indicesNavegacao Manual = {}; 
 
         const wImagem = 2000, hImagem = 1414;
         const limitesPlanta = [[0, 0], [hImagem, wImagem]];
@@ -248,7 +250,7 @@
             { nome: "Guarnição CBMSE", coord: [748, 530], tipo: "guarnicao" },
             { nome: "Guarnição CBMSE", coord: [832, 500], tipo: "guarnicao" },
             { nome: "Guarnição CBMSE", coord: [728, 656], tipo: "guarnicao" },
-            { nome: "Guarnição CBMSE", coord: [848, 654], tipo: "guarnicao" },
+            { nome: "Guarnição CBMSE", coord: [848, 654], font_coord: [848, 654], tipo: "guarnicao" },
             { nome: "Guarnição CBMSE", coord: [758, 1014], tipo: "guarnicao" },
             { nome: "Guarnição CBMSE", coord: [840, 956], tipo: "guarnicao" }
         ];
@@ -321,7 +323,6 @@
             mapaEstado = L.map('mapa-estado', { zoomControl: false }).setView([-10.7, -37.4], 8);
             L.control.zoom({ position: 'topright' }).addTo(mapaEstado);
             
-            // MAPA DE SATÉLITE
             L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
                 attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
             }).addTo(mapaEstado);
@@ -384,20 +385,31 @@
             });
         }
 
-        // Correção definitiva da Interação Estática (Sem carrossel e sem pular pontos involuntariamente)
+        // LÓGICA DE NAVEGAÇÃO MANUAL RIGOROSA POR CLIQUE
         function interagirPlantaPorTipo(tipoAlvo) {
             mudarModo('planta');
             fecharMenuMobile(); 
 
-            // Filtra os locais correspondentes ao botão clicado
+            // Filtra os itens da categoria clicada
             const itensFiltrados = referenciasDestaques.filter(item => item.tipo === tipoAlvo);
 
             if (itensFiltrados.length > 0) {
-                // Sempre vai focar no ponto de forma estática ao clicar
-                const alvo = itensFiltrados[0]; 
+                // Se for o primeiro clique nesta categoria, define como 0
+                if (indicesNavegacaoManual[tipoAlvo] === undefined) {
+                    indicesNavegacaoManual[tipoAlvo] = 0;
+                }
 
+                // Obtém o índice do elemento que deve ser exibido NESTE clique
+                let indiceAtual = indicesNavegacaoManual[tipoAlvo];
+                const alvo = itensFiltrados[indiceAtual];
+
+                // Move para o ponto e abre o balão correspondente apenas uma vez
                 mapaPlanta.panTo(alvo.centro);
                 alvo.elemento.openPopup();
+
+                // Calcula e guarda o próximo índice para o PRÓXIMO clique
+                // (Se houver 4 saídas, o próximo clique vai para a 1, depois para a 2, etc.)
+                indicesNavegacaoManual[tipoAlvo] = (indiceAtual + 1) % itensFiltrados.length;
             }
         }
 
