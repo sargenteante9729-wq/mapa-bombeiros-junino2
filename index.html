@@ -223,36 +223,35 @@
         let mapaEstado = null, mapaPlanta = null;
         let rotaEstadoLinha = null, vtrEstadoMarcador = null, timerEstado = null;
         let marcadorInfoGeral = null;
+        let temporizadorCarrosselPlanta = null; // Controla a execução do loop temporizado
 
         let referenciasDestaques = [];
-        // Guarda o índice do último ponto visitado para cada tipo de destaque
-        let indicesNavegacao = {}; 
 
         const wImagem = 2000, hImagem = 1414;
         const limitesPlanta = [[0, 0], [hImagem, wImagem]];
 
         const locaisDestaquesPSCIP = [
-            { nome: "Saída Emergencial", coord: [620, 104], tipo: "saida" },
-            { nome: "Saída Emergencial (Próx. Vtr)", coord: [519, 275], tipo: "saida" },
-            { nome: "Saída Emergencial Superior", coord: [474, 1092], tipo: "saida" },
-            { nome: "Saída Emergencial Central", coord: [632, 1244], tipo: "saida" },
-            { nome: "Saída Emergencial", coord: [872, 1248], tipo: "saida" },
-            { nome: "Saída Emergencial", coord: [1006, 1096], tipo: "saida" },
+            { nome: "Saída Emergencial", coord: [620, 104], cor: "#ffeb3b", tipo: "saida" },
+            { nome: "Saída Emergencial (Próx. Vtr)", coord: [519, 275], cor: "#ffeb3b", tipo: "saida" },
+            { nome: "Saída Emergencial Superior", coord: [474, 1092], cor: "#ffeb3b", tipo: "saida" },
+            { nome: "Saída Emergencial Central", coord: [632, 1244], cor: "#ffeb3b", tipo: "saida" },
+            { nome: "Saída Emergencial", coord: [872, 1248], cor: "#ffeb3b", tipo: "saida" },
+            { nome: "Saída Emergencial", coord: [1006, 1096], cor: "#ffeb3b", tipo: "saida" },
             
-            { nome: "Entrada de Público Central Arena", coord: [722, 1210], tipo: "entrada" },
-            { nome: "Entrada de Público Inferior Arena", coord: [382, 658], tipo: "entrada" },
+            { nome: "Entrada de Público Central Arena", coord: [722, 1210], cor: "#00b0ff", tipo: "entrada" },
+            { nome: "Entrada de Público Inferior Arena", coord: [382, 658], cor: "#00b0ff", tipo: "entrada" },
 
-            { nome: "Viatura UR - Arraiá do Povo", coord: [544, 172], tipo: "vtr_arraia" },
-            { nome: "Viatura ABT - Arraiá do Povo", coord: [716, 1314], tipo: "vtr_arraia" }, 
-            { nome: "Viatura UR - Vila do Forró", coord: [720, 1372], tipo: "vtr_vila" },  
-            { nome: "Viatura ABT - Vila do Forró", coord: [802, 1846], tipo: "vtr_vila" },
+            { nome: "Viatura UR - Arraiá do Povo", coord: [544, 172], cor: "#d32f2f", tipo: "vtr_arraia" },
+            { nome: "Viatura ABT - Arraiá do Povo", coord: [716, 1314], cor: "#d32f2f", tipo: "vtr_arraia" }, 
+            { nome: "Viatura UR - Vila do Forró", coord: [720, 1372], cor: "#d32f2f", tipo: "vtr_vila" },    
+            { nome: "Viatura ABT - Vila do Forró", coord: [802, 1846], cor: "#d32f2f", tipo: "vtr_vila" },
 
-            { nome: "Guarnição CBMSE", coord: [748, 530], tipo: "guarnicao" },
-            { nome: "Guarnição CBMSE", coord: [832, 500], tipo: "guarnicao" },
-            { nome: "Guarnição CBMSE", coord: [728, 656], tipo: "guarnicao" },
-            { nome: "Guarnição CBMSE", coord: [848, 654], tipo: "guarnicao" },
-            { nome: "Guarnição CBMSE", coord: [758, 1014], tipo: "guarnicao" },
-            { nome: "Guarnição CBMSE", coord: [840, 956], tipo: "guarnicao" }
+            { nome: "Guarnição CBMSE", coord: [748, 530], cor: "#ff9800", tipo: "guarnicao" },
+            { nome: "Guarnição CBMSE", coord: [832, 500], cor: "#ff9800", tipo: "guarnicao" },
+            { nome: "Guarnição CBMSE", coord: [728, 656], cor: "#ff9800", tipo: "guarnicao" },
+            { nome: "Guarnição CBMSE", coord: [848, 654], cor: "#ff9800", tipo: "guarnicao" },
+            { nome: "Guarnição CBMSE", coord: [758, 1014], cor: "#ff9800", tipo: "guarnicao" },
+            { nome: "Guarnição CBMSE", coord: [840, 956], cor: "#ff9800", tipo: "guarnicao" }
         ];
 
         function fecharMenuMobile() {
@@ -342,20 +341,42 @@
 
             referenciasDestaques = [];
 
+            // Renderiza as caixas geométricas nos locais exatos configurados
             locaisDestaquesPSCIP.forEach(p => {
+                let largura = 64, altura = 46;
+                let estiloBorda = null;
+
+                if (p.tipo.indexOf("vtr") !== -1) { 
+                    largura = 94; altura = 60; 
+                } else if (p.tipo === "guarnicao") { 
+                    largura = 120; altura = 85; 
+                } else if (p.tipo === "saida") {
+                    estiloBorda = "8, 8"; 
+                }
+
+                let semiH = altura / 2, semiW = largura / 2;
                 let yCorrigido = hImagem - p.coord[0];
                 let xCorrigido = p.coord[1];
 
-                let marcadorInvisivel = L.marker([yCorrigido, xCorrigido], { opacity: 0 })
-                    .addTo(mapaPlanta)
-                    .bindPopup(`
-                        <div style="text-align:center; font-family: Arial, sans-serif;">
-                            <strong style="font-size:14px; color:#333;">${p.nome}</strong><br>
-                            <span style="font-size:11px; color:#666; text-transform:uppercase;">Setor Operacional</span>
-                        </div>
-                    `);
+                let boundsPoligono = [
+                    [yCorrigido - semiH, xCorrigido - semiW],
+                    [yCorrigido + semiH, xCorrigido + semiW]
+                ];
 
-                referenciasDestaques.push({ tipo: p.tipo, elemento: marcadorInvisivel, centro: [yCorrigido, xCorrigido] });
+                let retangulo = L.rectangle(boundsPoligono, {
+                    color: p.cor,
+                    weight: 3,
+                    fillColor: p.cor,
+                    fillOpacity: p.tipo === "saida" ? 0.2 : 0.4,
+                    dashArray: estiloBorda
+                }).addTo(mapaPlanta).bindPopup(`
+                    <div style="text-align:center; font-family: Arial, sans-serif;">
+                        <strong style="font-size:14px; color:#333;">${p.nome}</strong><br>
+                        <span style="font-size:11px; color:#666; text-transform:uppercase;">Setor Operacional</span>
+                    </div>
+                `);
+
+                referenciasDestaques.push({ tipo: p.tipo, elemento: retangulo, centro: [yCorrigido, xCorrigido] });
             });
 
             marcadorInfoGeral = L.marker([hImagem - 780, 650], { opacity: 0 }).addTo(mapaPlanta);
@@ -382,28 +403,38 @@
             });
         }
 
-        // Lógica de navegação manual por clique único
+        // Lógica Avançada: Executa o loop uma única vez por todos os itens e para no final automaticamente
         function interagirPlantaPorTipo(tipoAlvo) {
             mudarModo('planta');
             fecharMenuMobile(); 
+            
+            // Limpa qualquer carrossel que esteja rodando no momento
+            if (temporizadorCarrosselPlanta) clearInterval(temporizadorCarrosselPlanta);
 
             const itensFiltrados = referenciasDestaques.filter(item => item.tipo === tipoAlvo);
 
             if (itensFiltrados.length > 0) {
-                // Se for a primeira vez clicando desse tipo, começa no 0
-                if (indicesNavegacao[tipoAlvo] === undefined) {
-                    indicesNavegacao[tipoAlvo] = 0;
+                let indice = 0;
+
+                function executarPassoCarrossel() {
+                    if (indice < itensFiltrados.length) {
+                        const alvo = itensFiltrados[indice];
+                        mapaPlanta.panTo(alvo.centro);
+                        alvo.elemento.openPopup();
+                        indice++; // Vai para o próximo item
+                    } else {
+                        // EXCLUSIVO: Chegou ao final do array, desativa o timer para não repetir
+                        clearInterval(temporizadorCarrosselPlanta);
+                    }
                 }
 
-                let indiceAtual = indicesNavegacao[tipoAlvo];
-                const alvo = itensFiltrados[indiceAtual];
+                // Executa o primeiro imediatamente
+                executarPassoCarrossel();
 
-                // Foca e abre o balão do ponto específico
-                mapaPlanta.panTo(alvo.centro);
-                alvo.elemento.openPopup();
-
-                // Atualiza o índice para o próximo clique (retorna a 0 se chegar ao fim)
-                indicesNavegacao[tipoAlvo] = (indiceAtual + 1) % itensFiltrados.length;
+                // Se houver mais de um ponto, agenda a exibição dos próximos a cada 2,6 segundos
+                if (itensFiltrados.length > 1) {
+                    temporizadorCarrosselPlanta = setInterval(executarPassoCarrossel, 2600);
+                }
             }
         }
 
