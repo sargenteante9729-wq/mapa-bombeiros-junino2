@@ -275,7 +275,7 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="dados.js?v=1.0.3"></script>
+    <script src="dados.js?v=1.0.4"></script>
 
     <script>
         const LAT_QUARTEL = -10.9126, LON_QUARTEL = -37.0543; 
@@ -565,11 +565,21 @@
             }, 40);
         }
 
+        /* CORRIGIDO: Função adaptada para ler lat e lon higienizados com suporte a falhas e OSRM */
         function gerarRotaEstadual(lat, lon, classe, city) {
             limparRotaAnterior();
             
+            // Força a validação das coordenadas caso venham nulas por incompatibilidade do dados.js
+            let validLat = lat || city.lat;
+            let validLon = lon || cityLonFix(city);
+
+            if(!validLat || !validLon) {
+                console.error("Coordenadas inválidas para animar a rota da cidade:", city.nome);
+                return;
+            }
+
             document.getElementById('tel-nome').innerText = city.nome;
-            const url = `https://router.project-osrm.org/route/v1/driving/${LON_QUARTEL},${LAT_QUARTEL};${lon},${lat}?overview=full&geometries=geojson`;
+            const url = `https://router.project-osrm.org/route/v1/driving/${LON_QUARTEL},${LAT_QUARTEL};${validLon},${validLat}?overview=full&geometries=geojson`;
             
             fetch(url)
                 .then(r => r.json())
@@ -588,12 +598,12 @@
                     animarCarrinho(coords, city, dist, dur, classe);
                 })
                 .catch(err => {
-                    console.warn("API OSRM indisponível ou lenta. Usando rota direta segura em linha.");
+                    console.warn("API OSRM indisponível. Usando rota direta contingencial.");
                     
                     const R = 6371;
-                    const dLat = (lat - LAT_QUARTEL) * Math.PI / 180;
-                    const dLon = (lon - LON_QUARTEL) * Math.PI / 180;
-                    const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(LAT_QUARTEL * Math.PI / 180) * Math.cos(lat * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+                    const dLat = (validLat - LAT_QUARTEL) * Math.PI / 180;
+                    const dLon = (validLon - LON_QUARTEL) * Math.PI / 180;
+                    const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(LAT_QUARTEL * Math.PI / 180) * Math.cos(validLat * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
                     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
                     const dEst = (R * c * 1.25); 
                     
@@ -604,12 +614,11 @@
                     document.getElementById('tel-tempo').innerText = durOffline;
                     document.getElementById('painel-telemetria').style.display = 'block';
 
-                    // CORRIGIDO: Espaço em branco removido no nome da variável abaixo
                     const pontosLinhaDireta = [];
                     for (let i = 0; i <= 30; i++) {
                         let t = i / 30;
-                        let pLat = LAT_QUARTEL + (lat - LAT_QUARTEL) * t;
-                        let pLon = LON_QUARTEL + (lon - LON_QUARTEL) * t;
+                        let pLat = LAT_QUARTEL + (validLat - LAT_QUARTEL) * t;
+                        let pLon = LON_QUARTEL + (validLon - LON_QUARTEL) * t;
                         pontosLinhaDireta.push([pLat, pLon]);
                     }
                     
