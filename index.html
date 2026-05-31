@@ -223,10 +223,9 @@
         let mapaEstado = null, mapaPlanta = null;
         let rotaEstadoLinha = null, vtrEstadoMarcador = null, timerEstado = null;
         let marcadorInfoGeral = null;
+        let temporizadorCarrosselPlanta = null; 
 
         let referenciasDestaques = [];
-        // Variável corrigida (sem espaço)
-        let indicesNavegacaoManual = {}; 
 
         const wImagem = 2000, hImagem = 1414;
         const limitesPlanta = [[0, 0], [hImagem, wImagem]];
@@ -244,7 +243,7 @@
 
             { nome: "Viatura UR - Arraiá do Povo", coord: [544, 172], tipo: "vtr_arraia" },
             { nome: "Viatura ABT - Arraiá do Povo", coord: [716, 1314], tipo: "vtr_arraia" }, 
-            { nome: "Viatura UR - Vila do Forró", coord: [720, 1372], tipo: "vtr_vila" },  
+            { nome: "Viatura UR - Vila do Forró", coord: [720, 1372], tipo: "vtr_vila" },    
             { nome: "Viatura ABT - Vila do Forró", coord: [802, 1846], tipo: "vtr_vila" },
 
             { nome: "Guarnição CBMSE", coord: [748, 530], tipo: "guarnicao" },
@@ -323,7 +322,6 @@
             mapaEstado = L.map('mapa-estado', { zoomControl: false }).setView([-10.7, -37.4], 8);
             L.control.zoom({ position: 'topright' }).addTo(mapaEstado);
             
-            // MAPA DE SATÉLITE
             L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
                 attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
             }).addTo(mapaEstado);
@@ -347,24 +345,24 @@
 
             referenciasDestaques = [];
 
+            // Polígonos geométricos removidos! Agora criamos âncoras focais limpas com opacidade 0
             locaisDestaquesPSCIP.forEach(p => {
                 let yCorrigido = hImagem - p.coord[0];
                 let xCorrigido = p.coord[1];
 
-                let marcadorInvisivel = L.marker([yCorrigido, xCorrigido], { opacity: 0 })
-                    .addTo(mapaPlanta)
-                    .bindPopup(`
-                        <div style="text-align:center; font-family: Arial, sans-serif;">
-                            <strong style="font-size:14px; color:#333;">${p.nome}</strong><br>
-                            <span style="font-size:11px; color:#666; text-transform:uppercase;">Setor Operacional</span>
-                        </div>
-                    `);
+                let pontoFocal = L.marker([yCorrigido, xCorrigido], { opacity: 0 }).addTo(mapaPlanta).bindPopup(`
+                    <div style="text-align:center; font-family: Arial, sans-serif;">
+                        <strong style="font-size:14px; color:#333;">${p.nome}</strong><br>
+                        <span style="font-size:11px; color:#666; text-transform:uppercase;">Setor Operacional</span>
+                    </div>
+                `);
 
-                referenciasDestaques.push({ tipo: p.tipo, elemento: marcadorInvisivel, centro: [yCorrigido, xCorrigido] });
+                referenciasDestaques.push({ tipo: p.tipo, elemento: pontoFocal, centro: [yCorrigido, xCorrigido] });
             });
 
             marcadorInfoGeral = L.marker([hImagem - 780, 650], { opacity: 0 }).addTo(mapaPlanta);
 
+            // Shift + Clique para calibrar coordenadas
             mapaPlanta.on('click', function(e) {
                 if (e.originalEvent.shiftKey) {
                     let yPixelOriginal = Math.round(hImagem - e.latlng.lat);
@@ -386,26 +384,35 @@
             });
         }
 
-        // LÓGICA DE NAVEGAÇÃO MANUAL POR CLIQUE (CORRIGIDA)
+        // CARROSSEL COM ENCERRAMENTO AUTOMÁTICO (PRESERVADO)
         function interagirPlantaPorTipo(tipoAlvo) {
             mudarModo('planta');
             fecharMenuMobile(); 
 
+            if (temporizadorCarrosselPlanta) clearInterval(temporizadorCarrosselPlanta);
+
             const itensFiltrados = referenciasDestaques.filter(item => item.tipo === tipoAlvo);
 
             if (itensFiltrados.length > 0) {
-                if (indicesNavegacaoManual[tipoAlvo] === undefined) {
-                    indicesNavegacaoManual[tipoAlvo] = 0;
+                let indice = 0;
+
+                function executarPassoCarrossel() {
+                    if (indice < itensFiltrados.length) {
+                        const alvo = itensFiltrados[indice];
+                        mapaPlanta.panTo(alvo.centro);
+                        alvo.elemento.openPopup();
+                        indice++; 
+                    } else {
+                        // Varredura concluída com sucesso: desliga o temporizador e para
+                        clearInterval(temporizadorCarrosselPlanta);
+                    }
                 }
 
-                let indiceAtual = indicesNavegacaoManual[tipoAlvo];
-                const alvo = itensFiltrados[indiceAtual];
+                executarPassoCarrossel();
 
-                mapaPlanta.panTo(alvo.centro);
-                alvo.elemento.openPopup();
-
-                // Avança para o próximo ponto no próximo clique manual
-                indicesNavegacaoManual[tipoAlvo] = (indiceAtual + 1) % itensFiltrados.length;
+                if (itensFiltrados.length > 1) {
+                    temporizadorCarrosselPlanta = setInterval(executarPassoCarrossel, 2600);
+                }
             }
         }
 
