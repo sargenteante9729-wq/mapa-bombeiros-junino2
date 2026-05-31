@@ -108,7 +108,7 @@
         ul.lista-dados li:hover { background-color: #ffebee; }
         .status-prefixo { margin-right: 12px; font-size: 1.1rem; }
         
-        /* ÁREA DE MAPAS - COLA AO LADO DO MENU */
+        /* ÁREA DE MAPAS */
         #area-mapas { 
             flex-grow: 1; 
             height: 100vh; 
@@ -134,7 +134,7 @@
         .info-popup h3 { margin: 0 0 8px 0; color: #d32f2f; font-size: 16px; border-bottom: 2px solid #d32f2f; padding-bottom: 4px; }
         .info-popup p { margin: 5px 0; line-height: 1.4; }
 
-        /* REGRAS CRÍTICAS PARA MOBILE */
+        /* REGRAS MOBILE */
         @media (max-width: 768px) {
             #btn-menu-mobile { display: block; }
 
@@ -223,9 +223,10 @@
         let mapaEstado = null, mapaPlanta = null;
         let rotaEstadoLinha = null, vtrEstadoMarcador = null, timerEstado = null;
         let marcadorInfoGeral = null;
-        let temporizadorCarrosselPlanta = null;
 
         let referenciasDestaques = [];
+        // Guarda o índice do último ponto visitado para cada tipo de destaque
+        let indicesNavegacao = {}; 
 
         const wImagem = 2000, hImagem = 1414;
         const limitesPlanta = [[0, 0], [hImagem, wImagem]];
@@ -341,7 +342,6 @@
 
             referenciasDestaques = [];
 
-            // Adiciona marcadores invisíveis apenas com popups acoplados
             locaisDestaquesPSCIP.forEach(p => {
                 let yCorrigido = hImagem - p.coord[0];
                 let xCorrigido = p.coord[1];
@@ -360,7 +360,7 @@
 
             marcadorInfoGeral = L.marker([hImagem - 780, 650], { opacity: 0 }).addTo(mapaPlanta);
 
-            // Ferramenta de calibragem inteligente (Shift + Clique)
+            // Shift + Clique para calibrar coordenadas
             mapaPlanta.on('click', function(e) {
                 if (e.originalEvent.shiftKey) {
                     let yPixelOriginal = Math.round(hImagem - e.latlng.lat);
@@ -382,40 +382,28 @@
             });
         }
 
+        // Lógica de navegação manual por clique único
         function interagirPlantaPorTipo(tipoAlvo) {
             mudarModo('planta');
             fecharMenuMobile(); 
-            if (temporizadorCarrosselPlanta) clearInterval(temporizadorCarrosselPlanta);
 
             const itensFiltrados = referenciasDestaques.filter(item => item.tipo === tipoAlvo);
 
             if (itensFiltrados.length > 0) {
-                let indice = 0;
-
-                function executarPassoCarrossel() {
-                    if (indice < itensFiltrados.length) {
-                        const alvo = itensFiltrados[indice];
-                        mapaPlanta.panTo(alvo.centro);
-                        alvo.elemento.openPopup();
-                        indice++;
-                    } else {
-                        if(tipoAlvo.indexOf("vtr") !== -1 || tipoAlvo === "guarnicao") {
-                            indice = 0; 
-                            const alvo = itensFiltrados[indice];
-                            mapaPlanta.panTo(alvo.centro);
-                            alvo.elemento.openPopup();
-                            indice++;
-                        } else {
-                            clearInterval(temporizadorCarrosselPlanta);
-                        }
-                    }
+                // Se for a primeira vez clicando desse tipo, começa no 0
+                if (indicesNavegacao[tipoAlvo] === undefined) {
+                    indicesNavegacao[tipoAlvo] = 0;
                 }
 
-                executarPassoCarrossel();
+                let indiceAtual = indicesNavegacao[tipoAlvo];
+                const alvo = itensFiltrados[indiceAtual];
 
-                if (itensFiltrados.length > 1) {
-                    temporizadorCarrosselPlanta = setInterval(executarPassoCarrossel, 2800);
-                }
+                // Foca e abre o balão do ponto específico
+                mapaPlanta.panTo(alvo.centro);
+                alvo.elemento.openPopup();
+
+                // Atualiza o índice para o próximo clique (retorna a 0 se chegar ao fim)
+                indicesNavegacao[tipoAlvo] = (indiceAtual + 1) % itensFiltrados.length;
             }
         }
 
