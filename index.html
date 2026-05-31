@@ -340,11 +340,20 @@
 
             referenciasRetangulos = [];
 
+            // PASSO 2: Desenho parametrizado, otimizado e estilizado dos destaques táticos da planta
             locaisDestaquesPSCIP.forEach(p => {
                 let largura = 64, altura = 46;
-                if(p.tipo.indexOf("vtr") !== -1) { largura = 94, altura = 60; }
-                if(p.tipo === "guarnicao") { largura = 120, altura = 85; }
-                if(p.nome.indexOf("Bilheteria") !== -1) { largura = 136, altura = 136; }
+                let estiloBorda = null;
+
+                if (p.tipo.indexOf("vtr") !== -1) { 
+                    largura = 94; altura = 60; 
+                } else if (p.tipo === "guarnicao") { 
+                    largura = 120; altura = 85; 
+                } else if (p.tipo === "saida") {
+                    estiloBorda = "8, 8"; // Linha tracejada tática para saídas de emergência
+                } else if (p.nome.indexOf("Bilheteria") !== -1) { 
+                    largura = 136; altura = 136; 
+                }
 
                 let semiH = altura / 2, semiW = largura / 2;
                 let yCorrigido = hImagem - p.coord[0];
@@ -359,14 +368,43 @@
                     color: p.cor,
                     weight: 3,
                     fillColor: p.cor,
-                    fillOpacity: 0.4,
-                    dashArray: p.tipo === "saida" ? "5,5" : null
-                }).addTo(mapaPlanta).bindPopup(`<b>${p.nome}</b>`);
+                    fillOpacity: p.tipo === "saida" ? 0.2 : 0.4,
+                    dashArray: estiloBorda
+                }).addTo(mapaPlanta).bindPopup(`
+                    <div style="text-align:center; font-family: Arial, sans-serif;">
+                        <strong style="font-size:14px; color:#333;">${p.nome}</strong><br>
+                        <span style="font-size:11px; color:#666; text-transform:uppercase;">Setor Operacional</span>
+                    </div>
+                `);
 
                 referenciasRetangulos.push({ tipo: p.tipo, elemento: retangulo, centro: [yCorrigido, xCorrigido] });
             });
 
             marcadorInfoGeral = L.marker([hImagem - 780, 650], { opacity: 0 }).addTo(mapaPlanta);
+
+            // PASSO 1: Ferramenta inteligente de calibragem (Modo Desenvolvedor)
+            // Segure a tecla SHIFT no teclado e clique na Planta para extrair coordenadas reais instantaneamente
+            mapaPlanta.on('click', function(e) {
+                if (e.originalEvent.shiftKey) {
+                    let yPixelOriginal = Math.round(hImagem - e.latlng.lat);
+                    let xPixelOriginal = Math.round(e.latlng.lng);
+                    
+                    console.log(`Ponto detectado para o código: [${yPixelOriginal}, ${xPixelOriginal}]`);
+                    
+                    L.popup()
+                        .setLatLng(e.latlng)
+                        .setContent(`
+                            <div style="text-align:center; font-family:monospace; min-width:130px;">
+                                <b style="color:#d32f2f; font-size:12px;">📍 Ponto Capturado</b><br>
+                                <input type="text" value="[${yPixelOriginal}, ${xPixelOriginal}]" 
+                                       style="width:105px; text-align:center; margin:6px 0; padding:3px; border:1px solid #ccc; font-weight:bold;" 
+                                       id="copy-coord" readonly onclick="this.select();"><br>
+                                <small style="color:#666; font-size:10px;">Copie e cole no array de destaques</small>
+                            </div>
+                        `)
+                        .openOn(mapaPlanta);
+                }
+            });
         }
 
         function interagirPlantaPorTipo(tipoAlvo) {
@@ -407,7 +445,6 @@
             document.getElementById('mapa-estado').style.display = isEst ? 'block' : 'none';
             document.getElementById('mapa-planta').style.display = !isEst ? 'block' : 'none';
             
-            // Força o Leaflet a recontar o espaço disponível imediatamente para prevenir mapas cinzas
             setTimeout(() => { 
                 if(isEst && mapaEstado) { mapaEstado.invalidateSize(); } 
                 if(!isEst && mapaPlanta) { mapaPlanta.invalidateSize(); } 
