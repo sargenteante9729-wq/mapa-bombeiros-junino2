@@ -23,7 +23,8 @@ const PLANILHA_MANUAL = [
     { nome: "Canindé de São Francisco", lat: -9.6617, lon: -37.7897, abts: "", ur: "", efetivo: "", risco: "", coordenacao: "", publico: "", eventos_programados: "", eventos_complementares: "" },
     { nome: "Cristinápolis", lat: -11.4756, lon: -37.7583, 
       abts: "1", ur: "", efetivo: "6", risco: "Baixo", coordenacao: "", publico: "", 
-      eventos_programados: "Forródromo Municipal de Cristinápolis: 23/06 e 24/06: 26/06 a 28/06: 03/07", eventos_complementares: "" },
+      eventos_programados: "Forródromo Municipal de Cristinápolis: 23/06 e 24/06: 26/06 a 28/06: 03/07", eventos_complementares: "" 
+    },
     { nome: "Itabaiana", lat: -10.6850, lon: -37.4278, abts: "", ur: "", efetivo: "", risco: "", coordenacao: "", publico: "", eventos_programados: "", eventos_complementares: "" },
     { nome: "Nossa Senhora do Socorro", lat: -10.8550, lon: -37.1261, abts: "", ur: "", efetivo: "", risco: "", coordenacao: "", publico: "", eventos_programados: "", eventos_complementares: "" },
     { nome: "Areia Branca", lat: -10.7589, lon: -37.3139, abts: "", ur: "", efetivo: "", risco: "", coordenacao: "", publico: "", eventos_programados: "", eventos_complementares: "" },
