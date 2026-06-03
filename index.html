@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sistema Integrated de Comando e PSCIP - CBMSE</title>
+    <title>Sistema Integrado de Comando e PSCIP - CBMSE</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
@@ -71,7 +71,7 @@
         }
         .btn-modo.ativo { background: #b71c1c; color: white; }
 
-        /* DASHBOARD TOTAIS - Atualizado para 3 colunas para caber os novos meios */
+        /* DASHBOARD TOTAIS */
         #dashboard-totais {
             display: grid; 
             grid-template-columns: repeat(3, 1fr);
@@ -113,11 +113,11 @@
         #area-principal-conteudo {
             flex-grow: 1;
             height: 100vh;
-            position: relative;
+            position: relative; 
             background: #e5e9f0;
         }
 
-        /* MAPA OCUPA 100% DA ÁREA PRINCIPAL */
+        /* MAPA */
         #area-mapas { 
             width: 100%; 
             height: 100vh; 
@@ -132,21 +132,21 @@
             position: absolute;
             top: 10px;
             right: 10px;
-            width: 25%;
-            height: auto;
+            width: 25%; 
+            height: auto; 
             background: #000000;
             border: 3px solid #d32f2f;
             border-radius: 4px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
             box-sizing: border-box;
-            z-index: 1000;
+            z-index: 1000; 
             display: flex;
         }
         
         #area-streaming iframe {
             width: 100%;
             height: auto;
-            aspect-ratio: 16 / 9;
+            aspect-ratio: 16 / 9; 
             border: none;
             display: block;
         }
@@ -228,9 +228,9 @@
                 <div class="quadro-total"><span class="total-numero" id="tot-cidades">0</span><span class="total-rotulo">Cidades</span></div>
                 <div class="quadro-total"><span class="total-numero" id="tot-efetivo">0</span><span class="total-rotulo">👨‍🚒 Efetivo</span></div>
                 <div class="quadro-total"><span class="total-numero" id="tot-abts">0</span><span class="total-rotulo">🚒 ABTs</span></div>
-                <div class="quadro-total"><span class="total-numero" id="tot-abtfs">0</span><span class="total-rotulo">🚒 ABTFs</span></div>
+                <div class="quadro-total"><span class="total-numero" id="tot-abtfs">0</span><span class="total-rotulo">🌲 ABTFs</span></div>
                 <div class="quadro-total"><span class="total-numero" id="tot-urs">0</span><span class="total-rotulo">🚑 URs</span></div>
-                <div class="quadro-total"><span class="total-numero" id="tot-acs">0</span><span class="total-rotulo">🚒 ACs</span></div>
+                <div class="quadro-total"><span class="total-numero" id="tot-acs">0</span><span class="total-rotulo">🚘 ACs</span></div>
             </div>
             
             <div id="painel-telemetria">
@@ -269,7 +269,7 @@
 
         <div id="area-streaming">
             <iframe 
-                src="https://www.youtube.com/embed/xd73tgciZXs?autoplay=1&mute=1&rel=0" 
+                src="https://www.youtube.com/embed/4UI-3ga3pt4?autoplay=1&mute=1&rel=0" 
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
                 referrerpolicy="strict-origin-when-cross-origin"
                 allowfullscreen>
@@ -348,7 +348,6 @@
 
         function cityLonFix(c) { return c.lon || c.lng || c.longit || c.longitude; }
 
-        // MOTOR DE CONTRE ATUALIZADO COM OS NOVOS CAMPOS
         function construirListagemEsquerda() {
             let tCidades = 0, tEfetivo = 0, tAbts = 0, tAbtfs = 0, tUrs = 0, tAcs = 0;
             const listaUl = document.getElementById('lista-cidades');
@@ -363,9 +362,9 @@
                     tCidades++;
                     tEfetivo += parseInt(cidade.efetivo) || 0;
                     tAbts    += parseInt(cidade.abts) || 0;
-                    tAbtfs   += parseInt(cidade.abtfs) || 0; // Novo campo
+                    tAbtfs   += parseInt(cidade.abtfs) || 0; 
                     tUrs     += parseInt(cidade.ur) || 0;
-                    tAcs     += parseInt(cidade.acs) || 0;   // Novo campo
+                    tAcs     += parseInt(cidade.acs) || 0;   
 
                     let ind = '🚒', classeRisco = 'risco-padrao';
                     if (cidade.risco === 'Alto') { ind = '🔴'; classeRisco = 'risco-alto'; }
@@ -388,7 +387,6 @@
                     });
                 });
                 
-                // Injeta as somas calculadas nas IDs do HTML correspondente
                 document.getElementById('tot-cidades').innerText = tCidades;
                 document.getElementById('tot-efetivo').innerText = tEfetivo;
                 document.getElementById('tot-abts').innerText = tAbts;
@@ -441,7 +439,6 @@
 
             marcadorInfoGeral = L.marker([hImagem - 780, 650], { opacity: 0 }).addTo(mapaPlanta);
 
-            // Shift + Clique para calibrar coordenadas
             mapaPlanta.on('click', function(e) {
                 if (e.originalEvent.shiftKey) {
                     let yPixelOriginal = Math.round(hImagem - e.latlng.lat);
@@ -474,7 +471,7 @@
             if (itensFiltrados.length > 0) {
                 let indice = 0;
 
-                function executingPassoCarrossel() {
+                function executarPassoCarrossel() {
                     if (indice < itensFiltrados.length) {
                         const alvo = itensFiltrados[indice];
                         mapaPlanta.panTo(alvo.centro);
@@ -485,10 +482,10 @@
                     }
                 }
 
-                executingPassoCarrossel();
+                executarPassoCarrossel();
 
                 if (itensFiltrados.length > 1) {
-                    temporizadorCarrosselPlanta = setInterval(executingPassoCarrossel, 2600);
+                    temporizadorCarrosselPlanta = setInterval(executarPassoCarrossel, 2600);
                 }
             }
         }
@@ -528,16 +525,15 @@
             }
         }
 
-        // JANELA DE DETALHES POPUP CONFIGURADA COM OS NOVOS MEIOS
         function gerarHTMLPopup(cidade, dist = '', tempo = '') {
             let telem = dist && tempo ? `<p style="color:#e65100; background:#ffe0b2; padding:4px; border-radius:3px; text-align:center;"><b>⏱️ Resposta: ${tempo} (${dist})</b></p>` : '';
             return `<div class="info-popup"><h3>${cidade.nome}</h3>${telem}
                 <p><strong>⚠️ Risco:</strong> ${cidade.risco || '-'}</p>
                 <p><strong>👨‍🚒 Efetivo:</strong> ${cidade.efetivo || '-'}</p>
                 <p><strong>🚒 ABTs:</strong> ${cidade.abts || '0'}</p>
-                <p><strong>🚑 ABTFs:</strong> ${cidade.abtfs || '0'}</p>
+                <p><strong>🌲 ABTFs:</strong> ${cidade.abtfs || '0'}</p>
                 <p><strong>🚑 URs:</strong> ${cidade.ur || '0'}</p>
-                <p><strong>🚑 ACs:</strong> ${cidade.acs || '0'}</p>
+                <p><strong>🚘 ACs:</strong> ${cidade.acs || '0'}</p>
                 <hr><p><strong>⭐ Principal:</strong> ${cidade.eventos_principais || '-'}</p></div>`;
         }
 
