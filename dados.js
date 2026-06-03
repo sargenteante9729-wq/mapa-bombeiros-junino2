@@ -17,12 +17,12 @@ const PLANILHA_MANUAL = [
         eventos_complementares: "📍 Centro Cultural: 🚒 Apoio preventivo"
     },
     { nome: "Barra dos Coqueiros", lat: -10.9089, lon: -37.0383, 
-      abts: "1", ur: "1", efetivo: "10", risco: "Médio", coordenacao: "1º GBM", publico: "5.000+", 
+      abts: "1", ur: "1", efetivo: "10+", risco: "Médio", coordenacao: "1º GBM", publico: "5.000+", 
       eventos_programados: "", eventos_complementares: ""
     },
     { nome: "Canindé de São Francisco", lat: -9.6617, lon: -37.7897, abts: "", ur: "", efetivo: "", risco: "", coordenacao: "", publico: "", eventos_programados: "", eventos_complementares: "" },
     { nome: "Cristinápolis", lat: -11.4756, lon: -37.7583, 
-      abts: "1", ur: "", efetivo: "12", risco: "Baixo", coordenacao: "", publico: "", 
+      abts: "1", ur: "", efetivo: "12+", risco: "Baixo", coordenacao: "", publico: "", 
       eventos_programados: "Forródromo Municipal de Cristinápolis: 23/06 e 24/06: 26/06 a 28/06: 03/07", eventos_complementares: "" 
     },
     { nome: "Itabaiana", lat: -10.6850, lon: -37.4278, abts: "", ur: "", efetivo: "", risco: "", coordenacao: "", publico: "", eventos_programados: "", eventos_complementares: "" },
