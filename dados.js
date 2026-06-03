@@ -25,8 +25,12 @@ const PLANILHA_MANUAL = [
       abts: "1", ur: "", efetivo: "12+", risco: "Baixo", coordenacao: "", publico: "", 
       eventos_programados: "Forródromo Municipal de Cristinápolis: 23/06 e 24/06: 26/06 a 28/06: 03/07", eventos_complementares: "" 
     },
-    { nome: "Itabaiana", lat: -10.6850, lon: -37.4278, abts: "", ur: "", efetivo: "", risco: "", coordenacao: "", publico: "", eventos_programados: "", eventos_complementares: "" },
-    { nome: "Nossa Senhora do Socorro", lat: -10.8550, lon: -37.1261, abts: "", ur: "", efetivo: "", risco: "", coordenacao: "", publico: "", eventos_programados: "", eventos_complementares: "" },
+    { nome: "Itabaiana", lat: -10.6850, lon: -37.4278, abtf: "1", AS: "1", efetivo: "25", risco: "Médio", coordenacao: "", publico: "", 
+      eventos_programados: "Festa dos Caminhoneiros: 06/06 a 07/06; 10/06 a 12/06", eventos_complementares: "" 
+    },
+    { nome: "Nossa Senhora do Socorro", lat: -10.8550, lon: -37.1261, abs: "1", ur: "", efetivo: "3", risco: "Baixo", coordenacao: "", publico: "", 
+     eventos_programados: "ABERTURA DOS FESTEJOS: 30/05", eventos_complementares: "" 
+    },
     { nome: "Areia Branca", lat: -10.7589, lon: -37.3139, abts: "", ur: "", efetivo: "", risco: "", coordenacao: "", publico: "", eventos_programados: "", eventos_complementares: "" },
     { nome: "Capela", lat: -10.5069, lon: -37.0528, abts: "", ur: "", efetivo: "", risco: "", coordenacao: "", publico: "", eventos_programados: "", eventos_complementares: "" },
     { nome: "Itaporanga d'Ajuda", lat: -10.9981, lon: -37.3078, abts: "", ur: "", efetivo: "", risco: "", coordenacao: "", publico: "", eventos_programados: "", eventos_complementares: "" },
