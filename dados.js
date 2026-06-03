@@ -25,7 +25,7 @@ const PLANILHA_MANUAL = [
       abts: "1", ur: "", efetivo: "12+", risco: "Baixo", coordenacao: "", publico: "", 
       eventos_programados: "Forródromo Municipal de Cristinápolis: 23/06 e 24/06: 26/06 a 28/06: 03/07", eventos_complementares: "" 
     },
-    { nome: "Itabaiana", lat: -10.6850, lon: -37.4278, abts:"" , abtfs: "1", ur:"", acs: "1", efetivo: "25", risco: "Médio", coordenacao: "", publico: "", 
+    { nome: "Itabaiana", lat: -10.6850, lon: -37.4278, abts:"" , abtfs:"1", ur:"", acs:"1", efetivo: "25", risco: "Médio", coordenacao: "", publico: "", 
       eventos_programados: "Festa dos Caminhoneiros: 06/06 a 07/06; 10/06 a 12/06", eventos_complementares: "" 
     },
     { nome: "Nossa Senhora do Socorro", lat: -10.8550, lon: -37.1261, abs: "1", ur: "", efetivo: "3", risco: "Baixo", coordenacao: "", publico: "", 
