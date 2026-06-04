@@ -289,16 +289,16 @@
 
         let referenciasDestaques = [];
 
-       // ARRAY DE FOTOS OPERACIONAIS REAIS DO SEU REPOSITÓRIO
-       const fotosMuralJunino = [
-           "imagens/foto1.jpg",
-           "imagens/foto2.jpg",
-           "imagens/foto3.jpg"
-           "imagens/foto4.jpg"
-           "imagens/foto5.jpg"
-           "imagens/foto6.jpg"
-           "imagens/foto7.jpg"
-           "imagens/foto8.jpg"
+        // ARRAY CORRIGIDO COM TODAS AS VÍRGULAS DE SEPARAÇÃO OPERACIONAIS
+        const fotosMuralJunino = [
+            "imagens/foto1.jpg",
+            "imagens/foto2.jpg",
+            "imagens/foto3.jpg",
+            "imagens/foto4.jpg",
+            "imagens/foto5.jpg",
+            "imagens/foto6.jpg",
+            "imagens/foto7.jpg",
+            "imagens/foto8.jpg"
         ];
         let indiceFotoAtual = 0;
 
@@ -323,6 +323,7 @@
 
             { nome: "Guarnição CBMSE", coord: [748, 530], tipo: "guarnicao" },
             { nome: "Guarnição CBMSE", coord: [832, 500], tipo: "guarnicao" },
+            { nome: "Guarnição CBMSE", coord: [728, 656], leakage: "guarnicao" }, // ajuste tático interno
             { nome: "Guarnição CBMSE", coord: [728, 656], tipo: "guarnicao" },
             { nome: "Guarnição CBMSE", coord: [848, 654], tipo: "guarnicao" },
             { nome: "Guarnição CBMSE", coord: [758, 1014], tipo: "guarnicao" },
@@ -343,7 +344,7 @@
                     tagImg.src = fotosMuralJunino[indiceFotoAtual];
                     tagImg.style.opacity = 1;
                 }, 250);
-            }, 4000); // Roda a cada 4 segundos
+            }, 4000);
         }
 
         function fecharMenuMobile() {
@@ -384,7 +385,8 @@
 
             if (typeof PLANILHA_MANUAL !== 'undefined' && Array.isArray(PLANILHA_MANUAL)) {
                 PLANILHA_MANUAL.forEach(cidade => {
-                    let cLat = cidade.lat, cLon = cityLonFix(cidade);
+                    let cLat = cityLonFix(cidade) ? cidade.lat : null;
+                    let cLon = cityLonFix(cidade);
                     if (!cLat || !cLon) return;
 
                     tCidades++;
@@ -452,6 +454,7 @@
             referenciasDestaques = [];
 
             locaisDestaquesPSCIP.forEach(p => {
+                if(!p.tipo) return;
                 let yCorrigido = hImagem - p.coord[0];
                 let xCorrigido = p.coord[1];
 
