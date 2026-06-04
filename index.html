@@ -127,7 +127,7 @@
         }
         .mapa-janela { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
         
-        /* CONTAINER DO VÍDEO SUPER COMPACTO */
+        /* CONTAINER DO MURAL DE FOTOS FLUTUANTE */
         #area-streaming {
             position: absolute;
             top: 10px;
@@ -141,14 +141,16 @@
             box-sizing: border-box;
             z-index: 1000; 
             display: flex;
+            overflow: hidden;
+            aspect-ratio: 16 / 9;
         }
         
-        #area-streaming iframe {
+        #area-streaming img {
             width: 100%;
-            height: auto;
-            aspect-ratio: 16 / 9; 
-            border: none;
+            height: 100%;
+            object-fit: cover;
             display: block;
+            transition: opacity 0.3s ease-in-out;
         }
 
         /* MARCADORES E POPUPS */
@@ -228,12 +230,11 @@
                 <div class="quadro-total"><span class="total-numero" id="tot-cidades">0</span><span class="total-rotulo">Cidades</span></div>
                 <div class="quadro-total"><span class="total-numero" id="tot-efetivo">0</span><span class="total-rotulo">👨‍🚒 Efetivo</span></div>
                 <div class="quadro-total"><span class="total-numero" id="tot-abts">0</span><span class="total-rotulo">🚒 ABTs</span></div>
-                <div class="quadro-total"><span class="total-numero" id="tot-abtfs">0</span><span class="total-rotulo">🚑 ABTFs</span></div>
+                <div class="quadro-total"><span class="total-numero" id="tot-abtfs">0</span><span class="total-rotulo">🌲 ABTFs</span></div>
                 <div class="quadro-total"><span class="total-numero" id="tot-urs">0</span><span class="total-rotulo">🚑 URs</span></div>
-                <div class="quadro-total"><span class="total-numero" id="tot-acs">0</span><span class="total-rotulo">🚑 ACs</span></div>
+                <div class="quadro-total"><span class="total-numero" id="tot-acs">0</span><span class="total-rotulo">🚘 ACs</span></div>
             </div>
-
-        
+            
             <div id="painel-telemetria">
                 <p>📍 Destino: <span id="tel-nome" style="color:#222;">-</span></p>
                 <p>📏 Distância: <span id="tel-distancia" style="color:#b71c1c;">-</span></p>
@@ -268,14 +269,10 @@
             <div id="mapa-planta" class="mapa-janela" style="display: none;"></div>
         </div>
 
-               <div id="area-streaming">
-            <iframe 
-                src="https://www.youtube-nocookie.com/embed/M7XMS9N_h9A?autoplay=1&mute=1&rel=0" 
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-                referrerpolicy="strict-origin-when-cross-origin"
-                allowfullscreen>
-            </iframe>
+        <div id="area-streaming">
+            <img id="mural-foto-operacional" src="" alt="Mural Operacional CBMSE">
         </div>
+
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -288,8 +285,18 @@
         let rotaEstadoLinha = null, vtrEstadoMarcador = null, timerEstado = null;
         let marcadorInfoGeral = null;
         let temporizadorCarrosselPlanta = null; 
+        let temporizadorMuralFotos = null;
 
         let referenciasDestaques = [];
+
+        // LINKS DE IMAGENS DE TESTE DA INTERNET (Substitua pelos caminhos das suas fotos reais)
+        const fotosMuralJunino = [
+            "https://picsum.photos/id/10/500/300",
+            "https://picsum.photos/id/12/500/300",
+            "https://picsum.photos/id/17/500/300",
+            "https://picsum.photos/id/29/500/300"
+        ];
+        let indiceFotoAtual = 0;
 
         const wImagem = 2000, hImagem = 1414;
         const limitesPlanta = [[0, 0], [hImagem, wImagem]];
@@ -317,6 +324,23 @@
             { nome: "Guarnição CBMSE", coord: [758, 1014], tipo: "guarnicao" },
             { nome: "Guarnição CBMSE", coord: [840, 956], tipo: "guarnicao" }
         ];
+
+        // ENGINE DO CARROSSEL DE IMAGENS
+        function iniciarMuralFotos() {
+            const tagImg = document.getElementById('mural-foto-operacional');
+            if (!tagImg || fotosMuralJunino.length === 0) return;
+
+            tagImg.src = fotosMuralJunino[indiceFotoAtual];
+
+            temporizadorMuralFotos = setInterval(() => {
+                tagImg.style.opacity = 0.3;
+                setTimeout(() => {
+                    indiceFotoAtual = (indiceFotoAtual + 1) % fotosMuralJunino.length;
+                    tagImg.src = fotosMuralJunino[indiceFotoAtual];
+                    tagImg.style.opacity = 1;
+                }, 250);
+            }, 4000); // Roda a cada 4 segundos
+        }
 
         function fecharMenuMobile() {
             if (window.innerWidth <= 768) {
@@ -531,9 +555,9 @@
                 <p><strong>⚠️ Risco:</strong> ${cidade.risco || '-'}</p>
                 <p><strong>👨‍🚒 Efetivo:</strong> ${cidade.efetivo || '-'}</p>
                 <p><strong>🚒 ABTs:</strong> ${cidade.abts || '0'}</p>
-                <p><strong>🚒 ABTFs:</strong> ${cidade.abtfs || '0'}</p>
+                <p><strong>🌲 ABTFs:</strong> ${cidade.abtfs || '0'}</p>
                 <p><strong>🚑 URs:</strong> ${cidade.ur || '0'}</p>
-                <p><strong>🚒 ACs:</strong> ${cidade.acs || '0'}</p>
+                <p><strong>🚘 ACs:</strong> ${cidade.acs || '0'}</p>
                 <hr><p><strong>⭐ Principal:</strong> ${cidade.eventos_principais || '-'}</p></div>`;
         }
 
@@ -584,6 +608,7 @@
         window.onload = () => { 
             inicializarMapaEstado(); 
             inicializarMapaPlanta(); 
+            iniciarMuralFotos(); 
         };
     </script>
 </body>
