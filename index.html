@@ -230,9 +230,9 @@
                 <div class="quadro-total"><span class="total-numero" id="tot-cidades">0</span><span class="total-rotulo">Cidades</span></div>
                 <div class="quadro-total"><span class="total-numero" id="tot-efetivo">0</span><span class="total-rotulo">👨‍🚒 Efetivo</span></div>
                 <div class="quadro-total"><span class="total-numero" id="tot-abts">0</span><span class="total-rotulo">🚒 ABTs</span></div>
-                <div class="quadro-total"><span class="total-numero" id="tot-abtfs">0</span><span class="total-rotulo">🚒 ABTFs</span></div>
+                <div class="quadro-total"><span class="total-numero" id="tot-abtfs">0</span><span class="total-rotulo">🌲 ABTFs</span></div>
                 <div class="quadro-total"><span class="total-numero" id="tot-urs">0</span><span class="total-rotulo">🚑 URs</span></div>
-                <div class="quadro-total"><span class="total-numero" id="tot-acs">0</span><span class="total-rotulo">🚒 ACs</span></div>
+                <div class="quadro-total"><span class="total-numero" id="tot-acs">0</span><span class="total-rotulo">🚘 ACs</span></div>
             </div>
             
             <div id="painel-telemetria">
@@ -289,16 +289,16 @@
 
         let referenciasDestaques = [];
 
-        // ARRAY AJUSTADO PARA LER EXTENSÃO .JPEG MAIÚSCULA
+        // ARRAY CORRIGIDO CIRURGICAMENTE PARA COMBINAR COM OS SEUS ARQUIVOS DO GITHUB
         const fotosMuralJunino = [
-            "imagens/foto1.JPEG",
-            "imagens/foto2.JPEG",
-            "imagens/foto3.JPEG",
-            "imagens/foto4.JPEG",
-            "imagens/foto5.JPEG",
-            "imagens/foto6.JPEG",
-            "imagens/foto7.JPEG",
-            "imagens/foto8.JPEG"
+            "imagens/foto1. JPEG.jpeg",
+            "imagens/foto2 . JPEG.jpeg",
+            "imagens/foto3 . JPEG.jpeg",
+            "imagens/foto4 . JPEG.jpeg",
+            "imagens/foto5 . JPEG.jpg",
+            "imagens/foto6 . JPEG.jpeg",
+            "imagens/foto7 . JPEG.jpeg",
+            "imagens/foto8 . JPEG.jpeg"
         ];
         let indiceFotoAtual = 0;
 
@@ -323,7 +323,6 @@
 
             { nome: "Guarnição CBMSE", coord: [748, 530], tipo: "guarnicao" },
             { nome: "Guarnição CBMSE", coord: [832, 500], tipo: "guarnicao" },
-            { nome: "Guarnição CBMSE", coord: [728, 656], leakage: "guarnicao" }, // ajuste tático interno
             { nome: "Guarnição CBMSE", coord: [728, 656], tipo: "guarnicao" },
             { nome: "Guarnição CBMSE", coord: [848, 654], tipo: "guarnicao" },
             { nome: "Guarnição CBMSE", coord: [758, 1014], tipo: "guarnicao" },
@@ -337,6 +336,8 @@
 
             tagImg.src = fotosMuralJunino[indiceFotoAtual];
 
+            if(temporizadorMuralFotos) clearInterval(temporizadorMuralFotos);
+
             temporizadorMuralFotos = setInterval(() => {
                 tagImg.style.opacity = 0.3;
                 setTimeout(() => {
@@ -344,7 +345,7 @@
                     tagImg.src = fotosMuralJunino[indiceFotoAtual];
                     tagImg.style.opacity = 1;
                 }, 250);
-            }, 4000);
+            }, 4000); // Troca a cada 4 segundos
         }
 
         function fecharMenuMobile() {
@@ -385,8 +386,7 @@
 
             if (typeof PLANILHA_MANUAL !== 'undefined' && Array.isArray(PLANILHA_MANUAL)) {
                 PLANILHA_MANUAL.forEach(cidade => {
-                    let cLat = cityLonFix(cidade) ? cidade.lat : null;
-                    let cLon = cityLonFix(cidade);
+                    let cLat = cidade.lat, cLon = cityLonFix(cidade);
                     if (!cLat || !cLon) return;
 
                     tCidades++;
@@ -431,7 +431,7 @@
             L.control.zoom({ position: 'topright' }).addTo(mapaEstado);
             
             L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+                attribution: 'Tiles &copy; Esri &mdash; Source: Esri'
             }).addTo(mapaEstado);
 
             L.marker([LAT_QUARTEL, LON_QUARTEL]).addTo(mapaEstado).bindPopup("<b>Quartel Geral - CBMSE</b>");
@@ -454,7 +454,6 @@
             referenciasDestaques = [];
 
             locaisDestaquesPSCIP.forEach(p => {
-                if(!p.tipo) return;
                 let yCorrigido = hImagem - p.coord[0];
                 let xCorrigido = p.coord[1];
 
@@ -562,9 +561,9 @@
                 <p><strong>⚠️ Risco:</strong> ${cidade.risco || '-'}</p>
                 <p><strong>👨‍🚒 Efetivo:</strong> ${cidade.efetivo || '-'}</p>
                 <p><strong>🚒 ABTs:</strong> ${cidade.abts || '0'}</p>
-                <p><strong>🚒 ABTFs:</strong> ${cidade.abtfs || '0'}</p>
+                <p><strong>🌲 ABTFs:</strong> ${cidade.abtfs || '0'}</p>
                 <p><strong>🚑 URs:</strong> ${cidade.ur || '0'}</p>
-                <p><strong>🚒 ACs:</strong> ${cidade.acs || '0'}</p>
+                <p><strong>🚘 ACs:</strong> ${cidade.acs || '0'}</p>
                 <hr><p><strong>⭐ Principal:</strong> ${cidade.eventos_principais || '-'}</p></div>`;
         }
 
@@ -609,7 +608,7 @@
                             if(step >= coords.length) step = coords.length-1;
                         }
                     }, 40);
-                }).catch(err => console.error("Erro na requisição OSRM: ", err));
+                }).catch(err => console.error("Erro OSRM: ", err));
         }
 
         window.onload = () => { 
